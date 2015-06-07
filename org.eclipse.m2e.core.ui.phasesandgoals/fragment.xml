@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<fragment>
+   <extension
+         point="org.eclipse.ui.commandImages">
+      <image
+            commandId="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
+            icon="icons/phasesandgoals.png">
+      </image>
+   </extension>
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            categoryId="org.eclipse.ui.category.project"
+            defaultHandler="org.eclipse.m2e.core.ui.internal.handlers.ShowPhasesAndGoalsHandler"
+            id="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
+            name="Show Phases And Goals">
+      </command>
+   </extension>
+   <extension
+         point="org.eclipse.ui.menus">
+      <menuContribution
+            allPopups="false"
+            locationURI="menu:project?after=projectProperties">
+         <separator
+               name="phasesandgoals.separator"
+               visible="true">
+         </separator>
+         <command
+               commandId="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
+               label="Show Phases And Goals"
+               style="push">
+            <visibleWhen
+                  checkEnabled="false">
+               <with
+                     variable="selection">
+			        <iterate operator="or" ifEmpty="false">
+			          <adapt type="org.eclipse.core.resources.IProject">
+			               <test
+			                     property="org.eclipse.core.resources.projectNature"
+			                     value="org.eclipse.m2e.core.maven2Nature">
+			               </test>
+			          </adapt>
+			        </iterate>
+               </with>
+            </visibleWhen>
+         </command>
+      </menuContribution>
+   </extension>
+</fragment>

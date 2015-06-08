@@ -1,6 +1,7 @@
 package org.eclipse.m2e.core.ui.internal.handlers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,21 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		}
 		return null;
 	}
+	
+	private static String CLEAN = "clean";
+	private static String DEFAULT = "default";
+	private static String SITE = "site";
+	private static Map<String, String> phaseToLikelyLifecycle = new HashMap<>();
+	static {
+		phaseToLikelyLifecycle.put("pre-clean", CLEAN);
+		phaseToLikelyLifecycle.put("clean", CLEAN);
+		phaseToLikelyLifecycle.put("post-clean", CLEAN);
+		
+		phaseToLikelyLifecycle.put("pre-site", SITE);
+		phaseToLikelyLifecycle.put("site", SITE);
+		phaseToLikelyLifecycle.put("post-site", SITE);
+		phaseToLikelyLifecycle.put("site-deploy", SITE);
+	}
 
 	private void handleProject(IProject project) {
 		final MavenConsoleImpl mavenConsole = M2EUIPluginActivator.getDefault()
@@ -130,9 +146,13 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							.entrySet();
 					for (Entry<String, List<MojoExecutionKey>> entry : entrySet) {
 						String phase = entry.getKey();
+						String lifecycle = phaseToLikelyLifecycle.get(phase);
+						if (lifecycle == null) {
+							lifecycle = DEFAULT;
+						}
 						List<MojoExecutionKey> goals = entry.getValue();
 						mavenConsole.info("|");
-						mavenConsole.info("+-- Phase: " + phase);
+						mavenConsole.info("+-- Phase: " + phase + " (Likely lifecycle: " + lifecycle + ")");
 						for (MojoExecutionKey pluginExecutionMetadata : goals) {
 							mavenConsole.info("|   |");
 							mavenConsole.info("|   +-- Goal: "

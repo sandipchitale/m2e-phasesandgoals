@@ -189,22 +189,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 		sb.append(artifactId).append(':').append(execution.getGoal());
 
-		// only show execution id if necessary
-//		int count = 0;
-//		for (MojoExecutionKey other : mappings.keySet()) {
-//			if (eq(execution.getGroupId(), other.getGroupId())
-//					&& eq(execution.getArtifactId(), other.getArtifactId())
-//					&& eq(execution.getGoal(), other.getGoal())) {
-//				count++;
-//			}
-//		}
-		//if (count > 1) {
-			sb.append(" (").append(execution.getExecutionId()).append(")"); //$NON-NLS-1$ //$NON-NLS-2$
-		//}
+		sb.append(" (").append(execution.getExecutionId()).append(")"); //$NON-NLS-1$ //$NON-NLS-2$
 		return sb.toString();
-	}
-
-	private static <T> boolean eq(T a, T b) {
-		return a != null ? a.equals(b) : b == null;
 	}
 }

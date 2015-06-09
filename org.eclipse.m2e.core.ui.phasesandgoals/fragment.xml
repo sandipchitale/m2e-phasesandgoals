@@ -1,23 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.4"?>
 <fragment>
-   <!--
-   <extension
-         point="org.eclipse.ui.views">
-      <category
-            id="org.eclipse.m2e.core.ui.phasesandgoals.category"
-            name="Phases and Goals">
-      </category>
-      <view
-            category="org.eclipse.m2e.core.ui.phasesandgoals.category"
-            class="org.eclipse.m2e.core.ui.phasesandgoals.PhasesAndGoalsViewPart"
-            icon="icons/phasesandgoals.png"
-            id="org.eclipse.m2e.core.ui.phasesandgoals.view"
-            name="Phases and Goals"
-            restorable="true">
-      </view>
-   </extension>
-   -->
    <extension
          point="org.eclipse.ui.commandImages">
       <image
@@ -30,7 +13,7 @@
       <command
             categoryId="org.eclipse.ui.category.project"
             id="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
-            name="Show Phases And Goals">
+            name="Phases And Goals...">
          <defaultHandler
                class="org.eclipse.m2e.core.ui.internal.handlers.ShowPhasesAndGoalsHandler">
          </defaultHandler>
@@ -47,7 +30,7 @@
          </separator>
          <command
                commandId="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
-               label="Show Phases And Goals"
+               label="Phases And Goals..."
                style="push">
             <visibleWhen
                   checkEnabled="true">
@@ -55,44 +38,5 @@
             </visibleWhen>
          </command>
       </menuContribution>
-      <!--  
-      <menuContribution
-            allPopups="false"
-            locationURI="menu:org.eclipse.m2e.core.ui.phasesandgoals.view">
-         <command
-               commandId="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
-               icon="icons/phasesandgoals.png"
-               label="Show Phases And Goals"
-               style="push">
-            <visibleWhen
-                  checkEnabled="true">
-            </visibleWhen>
-         </command>
-      </menuContribution>
-      <menuContribution
-            allPopups="false"
-            locationURI="toolbar:org.eclipse.m2e.core.ui.phasesandgoals.view">
-         <toolbar
-               id="org.eclipse.m2e.core.ui.phasesandgoals.view.toolbar">
-            <separator
-                  name="additions"
-                  visible="false">
-            </separator>
-         </toolbar>
-      </menuContribution>
-      <menuContribution
-            allPopups="false"
-            locationURI="toolbar:org.eclipse.m2e.core.ui.phasesandgoals.view.toolbar?after=additions">
-         <command
-               commandId="org.eclipse.m2e.core.ui.internal.commands.ShowPhasesAndGoals"
-               icon="icons/phasesandgoals.png"
-               label="Show Phases And Goals"
-               style="push">
-            <visibleWhen
-                  checkEnabled="true">
-            </visibleWhen>
-         </command>
-      </menuContribution>
-      -->
    </extension>
 </fragment>

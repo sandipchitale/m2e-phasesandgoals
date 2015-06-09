@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <site>
-   <feature url="features/org.eclipse.m2e.core.ui.phasesandgoals.feature_1.0.5.jar" id="org.eclipse.m2e.core.ui.phasesandgoals.feature" version="1.0.5">
+   <feature url="features/org.eclipse.m2e.core.ui.phasesandgoals.feature_1.0.8.jar" id="org.eclipse.m2e.core.ui.phasesandgoals.feature" version="1.0.8">
       <category name="Phases and Goals"/>
    </feature>
    <category-def name="Phases and Goals" label="Phases and Goals"/>

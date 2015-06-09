@@ -259,6 +259,9 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									((GridLayout) parent.getLayout()).numColumns++;
 									Button button = new Button(parent, SWT.PUSH);
 									button.setText("Launch selected goals");
+									button.setToolTipText("This will launch the Run As > Maven Build... dialog."
+											+ "\n"
+											+ "In it you can paste the goals copied to the clipboard.");
 									button.addSelectionListener(new SelectionListener() {
 										
 										@Override

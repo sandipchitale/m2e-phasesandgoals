@@ -39,6 +39,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -68,6 +69,7 @@ import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -77,11 +79,47 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.CheckedTreeSelectionDialog;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("restriction")
 public class ShowPhasesAndGoalsHandler extends AbstractHandler {
+	
+	private static final String LAUNCH = "icons/launch.png";
+	private static final String COPY = "icons/copy.png";
+	private static final String LOG = "icons/log.png";
+	
+	private static Map<String, ImageDescriptor> imageDescriptorMap = 
+			new HashMap<>();
+	
+    private static ImageDescriptor getImageDescriptor(String image) {
+    	ImageDescriptor imageDescriptor = imageDescriptorMap.get(image);
+    	if (imageDescriptor == null) {
+    		imageDescriptor = AbstractUIPlugin.imageDescriptorFromPlugin(M2EUIPluginActivator.getDefault().PLUGIN_ID, image);
+    		if (imageDescriptor != null) {
+    			imageDescriptorMap.put(image, imageDescriptor);
+    		}
+    	}
+    	return imageDescriptor;
+    }
+    
+    private static Map<String, Image> imageMap = 
+			new HashMap<>();
+    
+    private static Image getImageForName(Device device, String imageName) {
+    	Image image = imageMap.get(imageName);
+    	if (image == null) {
+    		ImageDescriptor imageDescriptor = getImageDescriptor(imageName);
+    		if (imageDescriptor == null) {
+    			return null;
+    		}
+    		image = new Image(device, imageDescriptor.getImageData());
+    		imageMap.put(imageName, image);
+    	}
+    	return image;
+    }
+	
 	private static final Logger log = LoggerFactory.getLogger(ShowPhasesAndGoalsHandler.class);
 
 	private static String CLEAN = "clean";
@@ -271,7 +309,8 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 						@Override
 						public void run() {
-							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider = new PhasesAndGoalsLabelProvider();
+							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider =
+									new PhasesAndGoalsLabelProvider();
 							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new CheckedTreeSelectionDialog(
 									shell, phasesAndGoalsLabelProvider,
 									new PhasesAndGoalsContentProvider(phases)) {
@@ -280,7 +319,8 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										Composite parent) {
 									((GridLayout) parent.getLayout()).numColumns++;
 									Button button = new Button(parent, SWT.PUSH);
-									button.setText("Launch selected goals");
+									button.setImage(getImageForName(shell.getDisplay(), LAUNCH));
+									button.setToolTipText("Launch selected goals");
 									button.addSelectionListener(new SelectionListener() {
 
 										@Override
@@ -302,7 +342,34 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									setButtonLayoutData(button);
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
-									button.setText("Log all");
+									button.setImage(getImageForName(shell.getDisplay(), COPY));
+									button.setToolTipText("Copy selected goals to clipboard");
+									button.addSelectionListener(new SelectionListener() {
+										
+										@Override
+										public void widgetSelected(
+												SelectionEvent e) {
+											computeResult();
+											Object[] results = getResult();
+
+											String goalsToRun = goalsToRun(project, mavenConsole,
+													phases, results);
+											if (goalsToRun != null) {
+												copyToClipboard("mvn -B " + goalsToRun);
+											}
+										}
+										
+										@Override
+										public void widgetDefaultSelected(
+												SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
+									setButtonLayoutData(button);
+									((GridLayout) parent.getLayout()).numColumns++;
+									button = new Button(parent, SWT.PUSH);
+									button.setImage(getImageForName(shell.getDisplay(), LOG));
+									button.setToolTipText("Log all");
 									button.addSelectionListener(new SelectionListener() {
 
 										@Override
@@ -333,6 +400,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											+ project.getName()
 											+ "\n"
 											+ "Selected goals will be copied to clipboard.");
+							phasesAndGoalsDialog.setHelpAvailable(false);
 							phasesAndGoalsDialog.setInput(phases);
 							phasesAndGoalsDialog.open();
 						}
@@ -350,7 +418,16 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 	private void launch(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases, Object[] results) {
+		String goalsToRun = goalsToRun(project, mavenConsole, phases, results);
+		if (goalsToRun != null) {
+			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,goalsToRun);
+			DebugUITools.launch(launchConfiguration, "run");
+		}
+	}
 
+	private String goalsToRun(IProject project, MavenConsoleImpl mavenConsole,
+			Map<String, List<MojoExecutionKey>> phases, Object[] results) {
+		
 		Set<String> goals = new LinkedHashSet<String>();
 		for (Object result : results) {
 			if (result instanceof String) {
@@ -364,7 +441,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				goals.add(goalToRun(mojoExecutionKey));
 			}
 		}
-
+		
 		StringBuilder sb = new StringBuilder();
 		for (String goal : goals) {
 			if (sb.length() > 0) {
@@ -377,13 +454,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			}
 		}
 		if (sb.length() > 0) {
-			// First copy to clipboard
-			copyToClipboard(sb.toString());
-			
-			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, sb.toString());
-			DebugUITools.launch(launchConfiguration, "run");
+			return sb.toString();
 		}
+		return null;
 	}
+	
 
 	private void toConsole(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases) {

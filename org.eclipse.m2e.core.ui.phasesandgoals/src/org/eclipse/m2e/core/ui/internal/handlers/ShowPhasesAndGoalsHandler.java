@@ -87,6 +87,7 @@ import org.slf4j.LoggerFactory;
 public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	
 	private static final String LAUNCH = "icons/launch.png";
+//	private static final String LAUNCH_DEBUG = "icons/launch_debug.png";
 	private static final String COPY = "icons/copy.png";
 	private static final String LOG = "icons/log.png";
 	
@@ -96,7 +97,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
     private static ImageDescriptor getImageDescriptor(String image) {
     	ImageDescriptor imageDescriptor = imageDescriptorMap.get(image);
     	if (imageDescriptor == null) {
-    		imageDescriptor = AbstractUIPlugin.imageDescriptorFromPlugin(M2EUIPluginActivator.getDefault().PLUGIN_ID, image);
+    		imageDescriptor = AbstractUIPlugin.imageDescriptorFromPlugin(M2EUIPluginActivator.PLUGIN_ID, image);
     		if (imageDescriptor != null) {
     			imageDescriptorMap.put(image, imageDescriptor);
     		}
@@ -330,7 +331,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											Object[] results = getResult();
 											close();
 											launch(project, mavenConsole,
-													phases, results);
+													phases, results, "run");
 										}
 
 										@Override
@@ -340,6 +341,31 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 									setButtonLayoutData(button);
+									
+//									((GridLayout) parent.getLayout()).numColumns++;
+//									button = new Button(parent, SWT.PUSH);
+//									button.setImage(getImageForName(shell.getDisplay(), LAUNCH_DEBUG));
+//									button.setToolTipText("Launch (Debug) selected goals");
+//									button.addSelectionListener(new SelectionListener() {
+//										@Override
+//										public void widgetSelected(
+//												SelectionEvent e) {
+//											computeResult();
+//											Object[] results = getResult();
+//											close();
+//											launch(project, mavenConsole,
+//													phases, results, "debug");
+//										}
+//
+//										@Override
+//										public void widgetDefaultSelected(
+//												SelectionEvent e) {
+//											widgetSelected(e);
+//										}
+//									});
+//									setButtonLayoutData(button);
+									
+									
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), COPY));
@@ -417,11 +443,12 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	}
 
 	private void launch(IProject project, MavenConsoleImpl mavenConsole,
-			Map<String, List<MojoExecutionKey>> phases, Object[] results) {
+			Map<String, List<MojoExecutionKey>> phases, Object[] results,
+			final String mode) {
 		String goalsToRun = goalsToRun(project, mavenConsole, phases, results);
 		if (goalsToRun != null) {
 			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,goalsToRun);
-			DebugUITools.launch(launchConfiguration, "run");
+			DebugUITools.launch(launchConfiguration, mode);
 		}
 	}
 

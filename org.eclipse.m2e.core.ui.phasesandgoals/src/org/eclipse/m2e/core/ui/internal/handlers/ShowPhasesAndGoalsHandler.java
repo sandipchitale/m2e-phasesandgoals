@@ -13,36 +13,55 @@ import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.debug.core.DebugPlugin;
+import org.eclipse.debug.core.ILaunchConfiguration;
+import org.eclipse.debug.core.ILaunchConfigurationType;
+import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.debug.core.ILaunchManager;
+import org.eclipse.debug.ui.DebugUITools;
+import org.eclipse.debug.ui.IDebugUIConstants;
+import org.eclipse.debug.ui.RefreshTab;
+import org.eclipse.jdt.core.IClasspathEntry;
+import org.eclipse.jdt.core.IJavaProject;
+import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
+import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
-import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.Viewer;
-import org.eclipse.m2e.actions.ExecutePomAction;
+import org.eclipse.m2e.actions.MavenLaunchConstants;
 import org.eclipse.m2e.core.MavenPlugin;
 import org.eclipse.m2e.core.embedder.ICallable;
 import org.eclipse.m2e.core.embedder.IMavenExecutionContext;
+import org.eclipse.m2e.core.internal.IMavenConstants;
 import org.eclipse.m2e.core.internal.lifecyclemapping.LifecycleMappingFactory;
 import org.eclipse.m2e.core.internal.lifecyclemapping.LifecycleMappingResult;
 import org.eclipse.m2e.core.internal.project.registry.MavenProjectFacade;
 import org.eclipse.m2e.core.lifecyclemapping.model.IPluginExecutionMetadata;
 import org.eclipse.m2e.core.project.IMavenProjectFacade;
 import org.eclipse.m2e.core.project.IMavenProjectRegistry;
+import org.eclipse.m2e.core.project.ResolverConfiguration;
 import org.eclipse.m2e.core.project.configurator.MojoExecutionKey;
 import org.eclipse.m2e.core.ui.internal.M2EUIPluginActivator;
 import org.eclipse.m2e.core.ui.internal.console.MavenConsoleImpl;
+import org.eclipse.m2e.internal.launch.Messages;
+import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
@@ -58,9 +77,12 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.CheckedTreeSelectionDialog;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("restriction")
 public class ShowPhasesAndGoalsHandler extends AbstractHandler {
+	private static final Logger log = LoggerFactory.getLogger(ShowPhasesAndGoalsHandler.class);
 
 	private static String CLEAN = "clean";
 	private static String DEFAULT = "default";
@@ -76,7 +98,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		phaseToLikelyLifecycle.put("post-site", SITE);
 		phaseToLikelyLifecycle.put("site-deploy", SITE);
 	}
-	
+
 	private class PhasesAndGoalsContentProvider implements ITreeContentProvider {
 		private Map<String, List<MojoExecutionKey>> phases;
 
@@ -259,21 +281,21 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									((GridLayout) parent.getLayout()).numColumns++;
 									Button button = new Button(parent, SWT.PUSH);
 									button.setText("Launch selected goals");
-									button.setToolTipText("This will launch the Run As > Maven Build... dialog."
-											+ "\n"
-											+ "In it you can paste the goals copied to the clipboard.");
 									button.addSelectionListener(new SelectionListener() {
-										
+
 										@Override
-										public void widgetSelected(SelectionEvent e) {
+										public void widgetSelected(
+												SelectionEvent e) {
 											computeResult();
 											Object[] results = getResult();
 											close();
-											launch(project, mavenConsole, phases, results);
+											launch(project, mavenConsole,
+													phases, results);
 										}
-										
+
 										@Override
-										public void widgetDefaultSelected(SelectionEvent e) {
+										public void widgetDefaultSelected(
+												SelectionEvent e) {
 											widgetSelected(e);
 										}
 									});
@@ -282,45 +304,53 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									button = new Button(parent, SWT.PUSH);
 									button.setText("Log all");
 									button.addSelectionListener(new SelectionListener() {
-										
+
 										@Override
-										public void widgetSelected(SelectionEvent e) {
+										public void widgetSelected(
+												SelectionEvent e) {
 											close();
-											toConsole(project, mavenConsole, phases);
+											toConsole(project, mavenConsole,
+													phases);
 										}
-										
+
 										@Override
-										public void widgetDefaultSelected(SelectionEvent e) {
+										public void widgetDefaultSelected(
+												SelectionEvent e) {
 											widgetSelected(e);
 										}
 									});
 									setButtonLayoutData(button);
-									createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL, true);
+									createButton(parent,
+											IDialogConstants.CANCEL_ID,
+											IDialogConstants.CANCEL_LABEL, true);
 								}
 							};
-							phasesAndGoalsDialog.setTitle("Phases and Goals of " + project.getName());
-							phasesAndGoalsDialog.setMessage("Select Phases and Goals from: " + project.getName() +
-									"\n" +
-									"Selected goals will be copied to clipboard.");
+							phasesAndGoalsDialog
+									.setTitle("Phases and Goals of "
+											+ project.getName());
+							phasesAndGoalsDialog
+									.setMessage("Select Phases and Goals from: "
+											+ project.getName()
+											+ "\n"
+											+ "Selected goals will be copied to clipboard.");
 							phasesAndGoalsDialog.setInput(phases);
 							phasesAndGoalsDialog.open();
 						}
-						
+
 					});
-					
+
 					return null;
 				}
 
-				
 			}, new NullProgressMonitor());
 		} catch (CoreException ex) {
+	        log.error(ex.getMessage(), ex);
 		}
 	}
 
-	private void launch(IProject project,
-			MavenConsoleImpl mavenConsole,
+	private void launch(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases, Object[] results) {
-		
+
 		Set<String> goals = new LinkedHashSet<String>();
 		for (Object result : results) {
 			if (result instanceof String) {
@@ -334,31 +364,31 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				goals.add(goalToRun(mojoExecutionKey));
 			}
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 		for (String goal : goals) {
 			if (sb.length() > 0) {
 				sb.append(" ");
 			}
-			sb.append(goal);
+			if (goal.indexOf(" ") == -1) {				
+				sb.append(goal);
+			} else {				
+				sb.append("\"" + goal + "\"");
+			}
 		}
 		if (sb.length() > 0) {
 			// First copy to clipboard
 			copyToClipboard(sb.toString());
 			
-			// Now launch the mvn build... dialog
-			ExecutePomAction executePomAction = new ExecutePomAction();
-			executePomAction.setInitializationData(null, null, "WITH_DIALOG");
-			executePomAction.launch(new StructuredSelection(project), "run");
+			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, sb.toString());
+			DebugUITools.launch(launchConfiguration, "run");
 		}
 	}
-	
-	private void toConsole(IProject project,
-			MavenConsoleImpl mavenConsole,
+
+	private void toConsole(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases) {
 		mavenConsole.info("Project: " + project.getName());
-		Set<Entry<String, List<MojoExecutionKey>>> entrySet = phases
-				.entrySet();
+		Set<Entry<String, List<MojoExecutionKey>>> entrySet = phases.entrySet();
 		for (Entry<String, List<MojoExecutionKey>> entry : entrySet) {
 			String phase = entry.getKey();
 			String lifecycle = phaseToLikelyLifecycle.get(phase);
@@ -367,8 +397,8 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			}
 			List<MojoExecutionKey> goals = entry.getValue();
 			mavenConsole.info("|");
-			mavenConsole.info("+-- Phase: " + phase
-					+ " (Likely lifecycle: " + lifecycle + ")");
+			mavenConsole.info("+-- Phase: " + phase + " (Likely lifecycle: "
+					+ lifecycle + ")");
 			for (MojoExecutionKey pluginExecutionMetadata : goals) {
 				mavenConsole.info("|   |");
 				mavenConsole.info("|   +-- Goal: "
@@ -377,11 +407,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		}
 		mavenConsole.info("O");
 	}
-	
+
 	String goalToRun(MojoExecutionKey execution) {
-		return shortArtifactId(execution)+":"+execution.getGoal();
+		return shortArtifactId(execution) + ":" + execution.getGoal() + "@" + execution.getExecutionId();
 	}
-	
+
 	String goal(MojoExecutionKey execution) {
 		// http://maven.apache.org/guides/plugin/guide-java-plugin-development.html#Shortening_the_Command_Line
 
@@ -393,7 +423,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 		sb.append(artifactId).append(':').append(execution.getGoal());
 
-		sb.append(" (").append(execution.getExecutionId()).append(")"); //$NON-NLS-1$ //$NON-NLS-2$
+		sb.append("@").append(execution.getExecutionId()); //$NON-NLS-1$ //$NON-NLS-2$
 		return sb.toString();
 	}
 
@@ -410,7 +440,89 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		}
 		return artifactId;
 	}
-	
+
+	private ILaunchConfiguration createLaunchConfiguration(IContainer basedir,
+			String goal) {
+		try {
+			ILaunchManager launchManager = DebugPlugin.getDefault()
+					.getLaunchManager();
+			ILaunchConfigurationType launchConfigurationType = launchManager
+					.getLaunchConfigurationType(MavenLaunchConstants.LAUNCH_CONFIGURATION_TYPE_ID);
+
+			String launchSafeGoalName = goal.replace(':', '-');
+
+			ILaunchConfigurationWorkingCopy workingCopy = launchConfigurationType
+					.newInstance(
+							null, //
+							NLS.bind(Messages.ExecutePomAction_executing,
+									launchSafeGoalName, basedir.getLocation()
+											.toString().replace('/', '-')));
+			workingCopy.setAttribute(MavenLaunchConstants.ATTR_POM_DIR, basedir
+					.getLocation().toOSString());
+			workingCopy.setAttribute(MavenLaunchConstants.ATTR_GOALS, goal);
+			workingCopy.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
+			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_SCOPE,
+					"${project}"); //$NON-NLS-1$
+			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_RECURSIVE, true);
+
+			setProjectConfiguration(workingCopy, basedir);
+
+			IPath path = getJREContainerPath(basedir);
+			if (path != null) {
+				workingCopy
+						.setAttribute(
+								IJavaLaunchConfigurationConstants.ATTR_JRE_CONTAINER_PATH,
+								path.toPortableString());
+			}
+
+			// TODO when launching Maven with debugger consider to add the
+			// following property
+			// -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000 -Xnoagent -Djava.compiler=NONE"
+
+			return workingCopy;
+		} catch (CoreException ex) {
+		}
+		return null;
+	}
+
+	private void setProjectConfiguration(
+			ILaunchConfigurationWorkingCopy workingCopy, IContainer basedir) {
+		IMavenProjectRegistry projectManager = MavenPlugin
+				.getMavenProjectRegistry();
+		IFile pomFile = basedir
+				.getFile(new Path(IMavenConstants.POM_FILE_NAME));
+		IMavenProjectFacade projectFacade = projectManager.create(pomFile,
+				false, new NullProgressMonitor());
+		if (projectFacade != null) {
+			ResolverConfiguration configuration = projectFacade
+					.getResolverConfiguration();
+
+			String selectedProfiles = configuration.getSelectedProfiles();
+			if (selectedProfiles != null && selectedProfiles.length() > 0) {
+				workingCopy.setAttribute(MavenLaunchConstants.ATTR_PROFILES,
+						selectedProfiles);
+			}
+		}
+	}
+
+	// TODO ideally it should use MavenProject, but it is faster to scan
+	// IJavaProjects
+	private IPath getJREContainerPath(IContainer basedir) throws CoreException {
+		IProject project = basedir.getProject();
+		if (project != null && project.hasNature(JavaCore.NATURE_ID)) {
+			IJavaProject javaProject = JavaCore.create(project);
+			IClasspathEntry[] entries = javaProject.getRawClasspath();
+			for (int i = 0; i < entries.length; i++) {
+				IClasspathEntry entry = entries[i];
+				if (JavaRuntime.JRE_CONTAINER
+						.equals(entry.getPath().segment(0))) {
+					return entry.getPath();
+				}
+			}
+		}
+		return null;
+	}
+
 	public static void copyToClipboard(String string) {
 		// Get Clipboard
 		Clipboard clipboard = new Clipboard(PlatformUI.getWorkbench()

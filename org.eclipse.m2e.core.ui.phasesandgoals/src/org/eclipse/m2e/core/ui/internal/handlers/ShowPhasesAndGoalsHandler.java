@@ -1,4 +1,4 @@
-package org.eclipse.m2e.core.ui.internal.handlers;
+	package org.eclipse.m2e.core.ui.internal.handlers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -91,6 +91,10 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	private static final String COPY = "icons/copy.png";
 	private static final String LOG = "icons/log.png";
 	
+	private static final String PHASES_AND_GOALS = "icons/phasesandgoals.png";
+	private static final String PHASE = "icons/phase.png";
+	private static final String GOAL = "icons/goal.png";
+
 	private static Map<String, ImageDescriptor> imageDescriptorMap = 
 			new HashMap<>();
 	
@@ -176,10 +180,19 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	};
 
 	private class PhasesAndGoalsLabelProvider implements ILabelProvider {
+		private Device device;
+
+		private PhasesAndGoalsLabelProvider(Device device) {
+			this.device = device;
+		}
 
 		@Override
 		public Image getImage(Object element) {
-			return null;
+			if (element instanceof String) {
+				return getImageForName(device, PHASE);
+			} else {				
+				return getImageForName(device, GOAL);
+			}
 		}
 
 		@Override
@@ -311,7 +324,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 						@Override
 						public void run() {
 							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider =
-									new PhasesAndGoalsLabelProvider();
+									new PhasesAndGoalsLabelProvider(shell.getDisplay());
 							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new CheckedTreeSelectionDialog(
 									shell, phasesAndGoalsLabelProvider,
 									new PhasesAndGoalsContentProvider(phases)) {
@@ -426,6 +439,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											+ project.getName()
 											+ "\n"
 											+ "Selected goals will be copied to clipboard.");
+							phasesAndGoalsDialog.setImage(getImageForName(shell.getDisplay(), PHASES_AND_GOALS));
 							phasesAndGoalsDialog.setHelpAvailable(false);
 							phasesAndGoalsDialog.setInput(phases);
 							phasesAndGoalsDialog.open();

@@ -40,8 +40,6 @@ import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.CheckStateChangedEvent;
-import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -129,15 +127,43 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	
 	private static final Logger log = LoggerFactory.getLogger(ShowPhasesAndGoalsHandler.class);
 
-	private static String CLEAN = "clean";
-	private static String DEFAULT = "default";
-	private static String SITE = "site";
+	private static String CLEAN = "Clean";
+	private static String DEFAULT = "Default";
+	private static String SITE = "Site";
+	private static String OTHER = "Other";
 	private static Map<String, String> phaseToLikelyLifecycle = new HashMap<>();
 	static {
+		// Clean lifecycle
 		phaseToLikelyLifecycle.put("pre-clean", CLEAN);
 		phaseToLikelyLifecycle.put("clean", CLEAN);
 		phaseToLikelyLifecycle.put("post-clean", CLEAN);
 
+		// Default lifecycle
+		phaseToLikelyLifecycle.put("validate", DEFAULT);
+		phaseToLikelyLifecycle.put("initialize", DEFAULT);
+		phaseToLikelyLifecycle.put("generate-sources", DEFAULT);
+		phaseToLikelyLifecycle.put("process-sources", DEFAULT);
+		phaseToLikelyLifecycle.put("generate-resources", DEFAULT);
+		phaseToLikelyLifecycle.put("process-resources", DEFAULT);
+		phaseToLikelyLifecycle.put("compile", DEFAULT);
+		phaseToLikelyLifecycle.put("process-classes", DEFAULT);
+		phaseToLikelyLifecycle.put("generate-test-sources", DEFAULT);
+		phaseToLikelyLifecycle.put("process-test-sources", DEFAULT);
+		phaseToLikelyLifecycle.put("generate-test-resources", DEFAULT);
+		phaseToLikelyLifecycle.put("process-test-resources", DEFAULT);
+		phaseToLikelyLifecycle.put("test-compile", DEFAULT);
+		phaseToLikelyLifecycle.put("process-test-classes", DEFAULT);
+		phaseToLikelyLifecycle.put("test", DEFAULT);
+		phaseToLikelyLifecycle.put("prepare-package", DEFAULT);
+		phaseToLikelyLifecycle.put("package", DEFAULT);
+		phaseToLikelyLifecycle.put("pre-integration-test", DEFAULT);
+		phaseToLikelyLifecycle.put("integration-test", DEFAULT);
+		phaseToLikelyLifecycle.put("post-integration-test", DEFAULT);
+		phaseToLikelyLifecycle.put("verify", DEFAULT);
+		phaseToLikelyLifecycle.put("install", DEFAULT);
+		phaseToLikelyLifecycle.put("deploy", DEFAULT);
+		
+		// Site lifecycle
 		phaseToLikelyLifecycle.put("pre-site", SITE);
 		phaseToLikelyLifecycle.put("site", SITE);
 		phaseToLikelyLifecycle.put("post-site", SITE);
@@ -203,9 +229,9 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				String phase = (String) element;
 				String lifecycle = phaseToLikelyLifecycle.get(phase);
 				if (lifecycle == null) {
-					lifecycle = DEFAULT;
+					lifecycle = OTHER;
 				}
-				phase = phase + " (Likely lifecycle: " + lifecycle + ")";
+				phase = phase + " (Lifecycle: " + lifecycle + ")";
 				// phase
 				return (String) phase;
 			} else if (element instanceof MojoExecutionKey) {
@@ -445,6 +471,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							phasesAndGoalsDialog.setHelpAvailable(false);
 							phasesAndGoalsDialog.setContainerMode(true);
 							phasesAndGoalsDialog.setInput(phases);
+							phasesAndGoalsDialog.setExpandedElements(phases.keySet().toArray());
 							phasesAndGoalsDialog.open();
 						}
 
@@ -512,12 +539,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			String phase = entry.getKey();
 			String lifecycle = phaseToLikelyLifecycle.get(phase);
 			if (lifecycle == null) {
-				lifecycle = DEFAULT;
+				lifecycle = OTHER;
 			}
 			List<MojoExecutionKey> goals = entry.getValue();
 			mavenConsole.info("|");
-			mavenConsole.info("+-- Phase: " + phase + " (Likely lifecycle: "
-					+ lifecycle + ")");
+			mavenConsole.info("+-- Phase: " + phase + " (Lifecycle: " + lifecycle + ")");
 			for (MojoExecutionKey pluginExecutionMetadata : goals) {
 				mavenConsole.info("|   |");
 				mavenConsole.info("|   +-- Goal: "

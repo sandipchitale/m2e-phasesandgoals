@@ -1,4 +1,4 @@
-	package org.eclipse.m2e.core.ui.internal.handlers;
+package org.eclipse.m2e.core.ui.internal.handlers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -67,6 +67,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Device;
@@ -79,25 +80,29 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.CheckedTreeSelectionDialog;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.internal.WorkbenchMessages;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("restriction")
 public class ShowPhasesAndGoalsHandler extends AbstractHandler {
+
+	private static final String EXPAND_ALL = "icons/expand_all.png";
+	private static final String COLLAPSE_ALL = "icons/collapse_all.png";
 	
 	private static final String LAUNCH = "icons/launch.png";
 //	private static final String LAUNCH_DEBUG = "icons/launch_debug.png";
 	private static final String COPY = "icons/copy.png";
 	private static final String LOG = "icons/log.png";
-	
+
 	private static final String PHASES_AND_GOALS = "icons/phasesandgoals.png";
 	private static final String PHASE = "icons/phase.png";
 	private static final String GOAL = "icons/goal.png";
 
-	private static Map<String, ImageDescriptor> imageDescriptorMap = 
+	private static Map<String, ImageDescriptor> imageDescriptorMap =
 			new HashMap<>();
-	
+
     private static ImageDescriptor getImageDescriptor(String image) {
     	ImageDescriptor imageDescriptor = imageDescriptorMap.get(image);
     	if (imageDescriptor == null) {
@@ -108,10 +113,10 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
     	}
     	return imageDescriptor;
     }
-    
-    private static Map<String, Image> imageMap = 
+
+    private static Map<String, Image> imageMap =
 			new HashMap<>();
-    
+
     private static Image getImageForName(Device device, String imageName) {
     	Image image = imageMap.get(imageName);
     	if (image == null) {
@@ -124,7 +129,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
     	}
     	return image;
     }
-	
+
 	private static final Logger log = LoggerFactory.getLogger(ShowPhasesAndGoalsHandler.class);
 
 	private static String CLEAN = "Clean";
@@ -162,7 +167,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		phaseToLikelyLifecycle.put("verify", DEFAULT);
 		phaseToLikelyLifecycle.put("install", DEFAULT);
 		phaseToLikelyLifecycle.put("deploy", DEFAULT);
-		
+
 		// Site lifecycle
 		phaseToLikelyLifecycle.put("pre-site", SITE);
 		phaseToLikelyLifecycle.put("site", SITE);
@@ -218,7 +223,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		public Image getImage(Object element) {
 			if (element instanceof String) {
 				return getImageForName(device, PHASE);
-			} else {				
+			} else {
 				return getImageForName(device, GOAL);
 			}
 		}
@@ -359,6 +364,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 								@Override
 								protected void createButtonsForButtonBar(
 										Composite parent) {
+									
 									((GridLayout) parent.getLayout()).numColumns++;
 									Button button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), LAUNCH));
@@ -382,7 +388,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 									setButtonLayoutData(button);
-									
+
 //									((GridLayout) parent.getLayout()).numColumns++;
 //									button = new Button(parent, SWT.PUSH);
 //									button.setImage(getImageForName(shell.getDisplay(), LAUNCH_DEBUG));
@@ -405,14 +411,14 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 //										}
 //									});
 //									setButtonLayoutData(button);
-									
-									
+
+
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), COPY));
 									button.setToolTipText("Copy selected goals to clipboard");
 									button.addSelectionListener(new SelectionListener() {
-										
+
 										@Override
 										public void widgetSelected(
 												SelectionEvent e) {
@@ -425,7 +431,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 												copyToClipboard("mvn -B " + goalsToRun);
 											}
 										}
-										
+
 										@Override
 										public void widgetDefaultSelected(
 												SelectionEvent e) {
@@ -433,6 +439,47 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 									setButtonLayoutData(button);
+
+									((GridLayout) parent.getLayout()).numColumns++;
+									button = new Button(parent, SWT.PUSH);
+									button.setImage(getImageForName(shell.getDisplay(), EXPAND_ALL));
+									button.setToolTipText("Expand All");
+									button.addSelectionListener(new SelectionListener() {
+
+										@Override
+										public void widgetSelected(
+												SelectionEvent e) {
+											getTreeViewer().expandAll();
+										}
+
+										@Override
+										public void widgetDefaultSelected(
+												SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
+									setButtonLayoutData(button);
+									
+									((GridLayout) parent.getLayout()).numColumns++;
+									button = new Button(parent, SWT.PUSH);
+									button.setImage(getImageForName(shell.getDisplay(), COLLAPSE_ALL));
+									button.setToolTipText("Collapse All");
+									button.addSelectionListener(new SelectionListener() {
+
+										@Override
+										public void widgetSelected(
+												SelectionEvent e) {
+											getTreeViewer().collapseAll();
+										}
+
+										@Override
+										public void widgetDefaultSelected(
+												SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
+									setButtonLayoutData(button);
+									
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), LOG));
@@ -498,7 +545,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 	private String goalsToRun(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases, Object[] results) {
-		
+
 		Set<String> goals = new LinkedHashSet<String>();
 		for (Object result : results) {
 			if (result instanceof String) {
@@ -512,15 +559,15 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				goals.add(goalToRun(mojoExecutionKey));
 			}
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 		for (String goal : goals) {
 			if (sb.length() > 0) {
 				sb.append(" ");
 			}
-			if (goal.indexOf(" ") == -1) {				
+			if (goal.indexOf(" ") == -1) {
 				sb.append(goal);
-			} else {				
+			} else {
 				sb.append("\"" + goal + "\"");
 			}
 		}
@@ -529,7 +576,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		}
 		return null;
 	}
-	
+
 
 	private void toConsole(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases) {

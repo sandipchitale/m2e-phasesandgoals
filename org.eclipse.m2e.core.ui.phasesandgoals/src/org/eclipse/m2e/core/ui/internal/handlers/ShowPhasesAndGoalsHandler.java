@@ -40,6 +40,8 @@ import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.CheckStateChangedEvent;
+import org.eclipse.jface.viewers.ICheckStateListener;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -441,6 +443,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											+ "Selected goals will be copied to clipboard.");
 							phasesAndGoalsDialog.setImage(getImageForName(shell.getDisplay(), PHASES_AND_GOALS));
 							phasesAndGoalsDialog.setHelpAvailable(false);
+							phasesAndGoalsDialog.setContainerMode(true);
 							phasesAndGoalsDialog.setInput(phases);
 							phasesAndGoalsDialog.open();
 						}

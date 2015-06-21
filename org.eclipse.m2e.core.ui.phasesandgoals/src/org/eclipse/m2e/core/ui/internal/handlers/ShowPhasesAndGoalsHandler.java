@@ -511,9 +511,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											+ project.getName());
 							phasesAndGoalsDialog
 									.setMessage("Select Phases and Goals from: "
-											+ project.getName()
-											+ "\n"
-											+ "Selected goals will be copied to clipboard.");
+											+ project.getName());
 							phasesAndGoalsDialog.setImage(getImageForName(shell.getDisplay(), PHASES_AND_GOALS));
 							phasesAndGoalsDialog.setHelpAvailable(false);
 							phasesAndGoalsDialog.setContainerMode(true);

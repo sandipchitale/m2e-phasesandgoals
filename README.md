@@ -11,6 +11,8 @@ Select a Maven project in the IDE and then invoke `Project > Phases and Goals` c
 - You can run the selected goals using the `Launch selected goals` command. 
 - You can copy selected goals to clipboard using the `Copy selected goals to clipboard` command. 
 - Use the `Log All` command to print the tree into the Maven Console.
+- Expand All/Collapse All
+- Selecting Phase selects associated goals
 
 ### Maven enhancement
 

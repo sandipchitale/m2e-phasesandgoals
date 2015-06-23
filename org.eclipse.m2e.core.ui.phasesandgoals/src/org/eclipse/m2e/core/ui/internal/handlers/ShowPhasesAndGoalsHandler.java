@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -40,6 +41,7 @@ import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
@@ -67,7 +69,6 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
 import org.eclipse.swt.dnd.TextTransfer;
 import org.eclipse.swt.dnd.Transfer;
-import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Device;
@@ -80,7 +81,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.CheckedTreeSelectionDialog;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.internal.WorkbenchMessages;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -376,9 +376,20 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 												SelectionEvent e) {
 											computeResult();
 											Object[] results = getResult();
-											close();
-											launch(project, mavenConsole,
-													phases, results, "run");
+											CheckboxTreeViewer treeViewer = getTreeViewer();
+											if (results != null && results.length > 0) {
+												List<Object> resultsList = new LinkedList<Object>();
+												for (Object result : results) {
+													if (!treeViewer.getGrayed(result)) {
+														resultsList.add(result);
+													}
+												}
+												close();
+												launch(project, mavenConsole,
+														phases, resultsList.toArray(), "run");
+											} else {
+												close();
+											}
 										}
 
 										@Override

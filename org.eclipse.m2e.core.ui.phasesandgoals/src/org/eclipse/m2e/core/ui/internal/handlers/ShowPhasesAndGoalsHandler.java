@@ -1,5 +1,7 @@
 package org.eclipse.m2e.core.ui.internal.handlers;
 
+import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -77,10 +79,15 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorInput;
+import org.eclipse.ui.IEditorPart;
+import org.eclipse.ui.IFileEditorInput;
+import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.CheckedTreeSelectionDialog;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
+import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -278,15 +285,40 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				Object adapter = adaptable.getAdapter(IResource.class);
 				if (adapter instanceof IResource) {
 					IProject project = ((IResource) adapter).getProject();
-					try {
-						if (project
-								.hasNature("org.eclipse.m2e.core.maven2Nature")) {
-							handleProject(project, activeShell);
-							return null;
+					if (project != null) {
+						try {
+							if (project
+									.hasNature("org.eclipse.m2e.core.maven2Nature")) {
+								handleProject(project, activeShell);
+								return null;
+							}
+						} catch (CoreException e) {
 						}
-					} catch (CoreException e) {
 					}
 				}
+			}
+		} else {
+			IWorkbenchPart activePart = HandlerUtil.getActivePart(event);
+			if (activePart instanceof IEditorPart) {
+				IEditorPart editorPart = (IEditorPart) activePart;
+				IEditorInput editorInput = editorPart.getEditorInput();
+				if (editorInput instanceof IFileEditorInput) {
+					IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
+					IFile iFile = fileEditorInput.getFile();
+					if (iFile != null) {
+						IProject project = iFile.getProject();
+						if (project != null) {
+							try {
+								if (project
+										.hasNature("org.eclipse.m2e.core.maven2Nature")) {
+									handleProject(project, activeShell);
+									return null;
+								}
+							} catch (CoreException e) {
+							}
+						}
+					}
+				}				
 			}
 		}
 
@@ -547,7 +579,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			final String mode) {
 		String goalsToRun = goalsToRun(project, mavenConsole, phases, results);
 		if (goalsToRun != null) {
-			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,goalsToRun);
+			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, goalsToRun);
 			DebugUITools.launch(launchConfiguration, mode);
 		}
 	}
@@ -643,14 +675,14 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	}
 
 	private ILaunchConfiguration createLaunchConfiguration(IContainer basedir,
-			String goal) {
+			String goals) {
 		try {
 			ILaunchManager launchManager = DebugPlugin.getDefault()
 					.getLaunchManager();
 			ILaunchConfigurationType launchConfigurationType = launchManager
 					.getLaunchConfigurationType(MavenLaunchConstants.LAUNCH_CONFIGURATION_TYPE_ID);
 
-			String launchSafeGoalName = goal.replace(':', '-');
+			String launchSafeGoalName = goals.replace(':', '-');
 
 			ILaunchConfigurationWorkingCopy workingCopy = launchConfigurationType
 					.newInstance(
@@ -660,7 +692,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											.toString().replace('/', '-')));
 			workingCopy.setAttribute(MavenLaunchConstants.ATTR_POM_DIR, basedir
 					.getLocation().toOSString());
-			workingCopy.setAttribute(MavenLaunchConstants.ATTR_GOALS, goal);
+			workingCopy.setAttribute(MavenLaunchConstants.ATTR_GOALS, goals);
 			workingCopy.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
 			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_SCOPE,
 					"${project}"); //$NON-NLS-1$

@@ -1,7 +1,5 @@
 package org.eclipse.m2e.core.ui.internal.handlers;
 
-import java.io.File;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -55,6 +53,8 @@ import org.eclipse.m2e.core.MavenPlugin;
 import org.eclipse.m2e.core.embedder.ICallable;
 import org.eclipse.m2e.core.embedder.IMavenExecutionContext;
 import org.eclipse.m2e.core.internal.IMavenConstants;
+import org.eclipse.m2e.core.internal.MavenPluginActivator;
+import org.eclipse.m2e.core.internal.launch.AbstractMavenRuntime;
 import org.eclipse.m2e.core.internal.lifecyclemapping.LifecycleMappingFactory;
 import org.eclipse.m2e.core.internal.lifecyclemapping.LifecycleMappingResult;
 import org.eclipse.m2e.core.internal.project.registry.MavenProjectFacade;
@@ -87,7 +87,6 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.dialogs.CheckedTreeSelectionDialog;
 import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
-import org.eclipse.ui.ide.FileStoreEditorInput;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -388,6 +387,13 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 						@Override
 						public void run() {
+							final String[] mavenVersion = new String[] { "0.0.0" };
+							AbstractMavenRuntime runtime = MavenPluginActivator.getDefault()
+									.getMavenRuntimeManager()
+									.getRuntime(org.eclipse.m2e.core.internal.launch.MavenRuntimeManagerImpl.DEFAULT);
+							if (runtime != null) {
+								mavenVersion[0] = runtime.getVersion();
+							}
 							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider =
 									new PhasesAndGoalsLabelProvider(shell.getDisplay());
 							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new CheckedTreeSelectionDialog(
@@ -431,8 +437,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 									setButtonLayoutData(button);
-
-//									((GridLayout) parent.getLayout()).numColumns++;
+									if (mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0)) {
+										button.setEnabled(false);
+									}
+									
+//									((GridLayout) parent.getLayout()).numColumns++; 
 //									button = new Button(parent, SWT.PUSH);
 //									button.setImage(getImageForName(shell.getDisplay(), LAUNCH_DEBUG));
 //									button.setToolTipText("Launch (Debug) selected goals");
@@ -560,9 +569,10 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							phasesAndGoalsDialog
 									.setTitle("Phases and Goals of "
 											+ project.getName());
-							phasesAndGoalsDialog
-									.setMessage("Select Phases and Goals from: "
-											+ project.getName());
+							phasesAndGoalsDialog.setMessage("Select Phases and Goals from: " + project.getName()
+									+ ((mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0)) ? 
+											  "\nLaunch selected goals disabled. Maven Version > 3.3.1 is required." 
+											: ""));
 							phasesAndGoalsDialog.setImage(getImageForName(shell.getDisplay(), PHASES_AND_GOALS));
 							phasesAndGoalsDialog.setHelpAvailable(false);
 							phasesAndGoalsDialog.setContainerMode(true);

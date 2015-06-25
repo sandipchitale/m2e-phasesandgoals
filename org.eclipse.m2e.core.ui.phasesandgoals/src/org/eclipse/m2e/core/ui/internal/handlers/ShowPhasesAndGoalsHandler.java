@@ -408,8 +408,8 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 												SelectionEvent e) {
 											computeResult();
 											Object[] results = getResult();
-											CheckboxTreeViewer treeViewer = getTreeViewer();
 											if (results != null && results.length > 0) {
+												CheckboxTreeViewer treeViewer = getTreeViewer();
 												List<Object> resultsList = new LinkedList<Object>();
 												for (Object result : results) {
 													if (!treeViewer.getGrayed(result)) {
@@ -467,11 +467,19 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 												SelectionEvent e) {
 											computeResult();
 											Object[] results = getResult();
-
-											String goalsToRun = goalsToRun(project, mavenConsole,
-													phases, results);
-											if (goalsToRun != null) {
-												copyToClipboard("mvn -B " + goalsToRun);
+											if (results != null && results.length > 0) {
+												CheckboxTreeViewer treeViewer = getTreeViewer();
+												List<Object> resultsList = new LinkedList<Object>();
+												for (Object result : results) {
+													if (!treeViewer.getGrayed(result)) {
+														resultsList.add(result);
+													}
+												}
+												String goalsToRun = goalsToRun(project, mavenConsole,
+														phases, resultsList.toArray());
+												if (goalsToRun != null) {
+													copyToClipboard("mvn -B " + goalsToRun);
+												}
 											}
 										}
 

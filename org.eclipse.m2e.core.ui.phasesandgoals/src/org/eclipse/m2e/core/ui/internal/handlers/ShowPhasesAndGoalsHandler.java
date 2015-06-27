@@ -45,8 +45,10 @@ import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
+import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
+import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.m2e.actions.MavenLaunchConstants;
 import org.eclipse.m2e.core.MavenPlugin;
@@ -75,10 +77,14 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Device;
 import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -96,7 +102,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 	private static final String EXPAND_ALL = "icons/expand_all.png";
 	private static final String COLLAPSE_ALL = "icons/collapse_all.png";
-	
+
 	private static final String LAUNCH = "icons/launch.png";
 //	private static final String LAUNCH_DEBUG = "icons/launch_debug.png";
 	private static final String COPY = "icons/copy.png";
@@ -317,7 +323,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							}
 						}
 					}
-				}				
+				}
 			}
 		}
 
@@ -399,10 +405,87 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new CheckedTreeSelectionDialog(
 									shell, phasesAndGoalsLabelProvider,
 									new PhasesAndGoalsContentProvider(phases)) {
+
+								private Label flagsLabel;
+								private Text flags;
+								private Label goalsLabel;
+							    private Text goals;
+
+							    private void setGoals() {
+							        final CheckboxTreeViewer treeViewer = getTreeViewer();
+
+							    	computeResult();
+									Object[] results = getResult();
+									if (results != null && results.length > 0) {
+										List<Object> resultsList = new LinkedList<Object>();
+										for (Object result : results) {
+											if (!treeViewer.getGrayed(result)) {
+												resultsList.add(result);
+											}
+										}
+										String goalsToRun = goalsToRun(project, mavenConsole,
+												phases, resultsList.toArray());
+										goals.setText(goalsToRun);
+									} else {
+										goals.setText("");
+
+									}
+							    }
+								/*
+							     *  (non-Javadoc)
+							     * @see org.eclipse.jface.dialogs.Dialog#createDialogArea(org.eclipse.swt.widgets.Composite)
+							     */
+							    @Override
+								protected Control createDialogArea(Composite parent) {
+							        Composite composite = (Composite) super.createDialogArea(parent);
+
+							        GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+							        flagsLabel = new Label(composite, SWT.LEFT);
+							        flagsLabel.setText("Maven Command Line Options:");
+							        flagsLabel.setLayoutData(flagsLabelLayoutData);
+
+							        GridData flagsLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+							        flags = new Text(composite, SWT.SINGLE | SWT.BORDER);
+							        flags.setText("-B");
+							        flags.setLayoutData(flagsLayoutData);
+
+							        GridData goalsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+							        goalsLabel = new Label(composite, SWT.LEFT);
+							        goalsLabel.setText("Goals:");
+							        goalsLabel.setLayoutData(goalsLabelLayoutData);
+
+							        GridData goalsLayoutData = new GridData(GridData.FILL_BOTH);
+							        goalsLayoutData.heightHint = convertHeightInCharsToPixels(4);;
+							        goals = new Text(composite, SWT.MULTI | SWT.WRAP | SWT.BORDER);
+							        goals.setLayoutData(goalsLayoutData);
+							        
+							        ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
+										
+										@Override
+										public void selectionChanged(SelectionChangedEvent event) {
+											setGoals();
+										}
+									};
+									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
+
+							        return composite;
+							    }
+							    
+							    @Override
+					    		protected void updateOKStatus() {
+					    			super.updateOKStatus();
+					    			getShell().getDisplay().asyncExec(new Runnable() {
+										@Override
+										public void run() {
+											setGoals();
+										}
+									});
+					    		}
+
 								@Override
 								protected void createButtonsForButtonBar(
 										Composite parent) {
-									
+
 									((GridLayout) parent.getLayout()).numColumns++;
 									Button button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), LAUNCH));
@@ -412,22 +495,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										@Override
 										public void widgetSelected(
 												SelectionEvent e) {
-											computeResult();
-											Object[] results = getResult();
-											if (results != null && results.length > 0) {
-												CheckboxTreeViewer treeViewer = getTreeViewer();
-												List<Object> resultsList = new LinkedList<Object>();
-												for (Object result : results) {
-													if (!treeViewer.getGrayed(result)) {
-														resultsList.add(result);
-													}
-												}
-												close();
-												launch(project, mavenConsole,
-														phases, resultsList.toArray(), "run");
-											} else {
-												close();
-											}
+											
+											String cliFlags = flags.getText();
+											String goalsToRun = goals.getText();
+											close();
+											launch(project, mavenConsole, phases, cliFlags, goalsToRun, "run");
 										}
 
 										@Override
@@ -440,65 +512,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									if (mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0)) {
 										button.setEnabled(false);
 									}
-									
-//									((GridLayout) parent.getLayout()).numColumns++; 
-//									button = new Button(parent, SWT.PUSH);
-//									button.setImage(getImageForName(shell.getDisplay(), LAUNCH_DEBUG));
-//									button.setToolTipText("Launch (Debug) selected goals");
-//									button.addSelectionListener(new SelectionListener() {
-//										@Override
-//										public void widgetSelected(
-//												SelectionEvent e) {
-//											computeResult();
-//											Object[] results = getResult();
-//											close();
-//											launch(project, mavenConsole,
-//													phases, results, "debug");
-//										}
-//
-//										@Override
-//										public void widgetDefaultSelected(
-//												SelectionEvent e) {
-//											widgetSelected(e);
-//										}
-//									});
-//									setButtonLayoutData(button);
-
-
-									((GridLayout) parent.getLayout()).numColumns++;
-									button = new Button(parent, SWT.PUSH);
-									button.setImage(getImageForName(shell.getDisplay(), COPY));
-									button.setToolTipText("Copy selected goals to clipboard");
-									button.addSelectionListener(new SelectionListener() {
-
-										@Override
-										public void widgetSelected(
-												SelectionEvent e) {
-											computeResult();
-											Object[] results = getResult();
-											if (results != null && results.length > 0) {
-												CheckboxTreeViewer treeViewer = getTreeViewer();
-												List<Object> resultsList = new LinkedList<Object>();
-												for (Object result : results) {
-													if (!treeViewer.getGrayed(result)) {
-														resultsList.add(result);
-													}
-												}
-												String goalsToRun = goalsToRun(project, mavenConsole,
-														phases, resultsList.toArray());
-												if (goalsToRun != null) {
-													copyToClipboard("mvn -B " + goalsToRun);
-												}
-											}
-										}
-
-										@Override
-										public void widgetDefaultSelected(
-												SelectionEvent e) {
-											widgetSelected(e);
-										}
-									});
-									setButtonLayoutData(button);
 
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
@@ -519,7 +532,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 									setButtonLayoutData(button);
-									
+
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), COLLAPSE_ALL));
@@ -539,7 +552,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 									setButtonLayoutData(button);
-									
+
 									((GridLayout) parent.getLayout()).numColumns++;
 									button = new Button(parent, SWT.PUSH);
 									button.setImage(getImageForName(shell.getDisplay(), LOG));
@@ -570,8 +583,8 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									.setTitle("Phases and Goals of "
 											+ project.getName());
 							phasesAndGoalsDialog.setMessage("Select Phases and Goals from: " + project.getName()
-									+ ((mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0)) ? 
-											  "\nLaunch selected goals disabled. Maven Version > 3.3.1 is required." 
+									+ ((mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0)) ?
+											  "\nLaunch selected goals disabled. Maven Version > 3.3.1 is required."
 											: ""));
 							phasesAndGoalsDialog.setImage(getImageForName(shell.getDisplay(), PHASES_AND_GOALS));
 							phasesAndGoalsDialog.setHelpAvailable(false);
@@ -593,11 +606,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	}
 
 	private void launch(IProject project, MavenConsoleImpl mavenConsole,
-			Map<String, List<MojoExecutionKey>> phases, Object[] results,
+			Map<String, List<MojoExecutionKey>> phases, String cliFlags, String goalsToRun,
 			final String mode) {
-		String goalsToRun = goalsToRun(project, mavenConsole, phases, results);
-		if (goalsToRun != null) {
-			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, goalsToRun);
+		if (goalsToRun.length() > 0) {
+			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, 
+					(cliFlags.trim().length() > 0 ? cliFlags + " " : "") + goalsToRun);
 			DebugUITools.launch(launchConfiguration, mode);
 		}
 	}

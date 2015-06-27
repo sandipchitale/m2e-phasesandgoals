@@ -9,8 +9,8 @@ Select a Maven project in the IDE and then invoke `Project > Phases and Goals` c
 ![Screenshot](org.eclipse.m2e.core.ui.phasesandgoals/phasesandgoals.png)
 
 - You can run the selected goals using the `Launch selected goals` ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/launch.png) command.
-- Use the `Log All` ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/log.png) command to print the tree into the Maven Console.
 - Expand All ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/expand_all.png)/Collapse All ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/collapse_all.png)
+- Use the `Log All` ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/log.png) command to print the tree into the Maven Console.
 - Selecting Phase selects associated goals
 
 ### Maven enhancement

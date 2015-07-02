@@ -2,6 +2,7 @@ package org.eclipse.m2e.core.ui.internal.handlers;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -105,7 +106,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 	private static final String LAUNCH = "icons/launch.png";
 //	private static final String LAUNCH_DEBUG = "icons/launch_debug.png";
-	private static final String COPY = "icons/copy.png";
 	private static final String LOG = "icons/log.png";
 
 	private static final String PHASES_AND_GOALS = "icons/phasesandgoals.png";
@@ -409,8 +409,11 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 								private Label flagsLabel;
 								private Text flags;
 								private Label goalsLabel;
+								private Button singleSelectionMode;
 							    private Text goals;
 
+							    private Set<Object> lastResults = new HashSet<Object>();
+							    
 							    private void setGoals() {
 							        final CheckboxTreeViewer treeViewer = getTreeViewer();
 
@@ -420,17 +423,34 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										List<Object> resultsList = new LinkedList<Object>();
 										for (Object result : results) {
 											if (!treeViewer.getGrayed(result)) {
-												resultsList.add(result);
+												// Check against remembered results
+												if (singleSelectionMode.getSelection()) {
+													if (!lastResults.contains(result)) {
+														resultsList.add(result);
+														lastResults.add(result);
+													}
+												} else {
+													resultsList.add(result);
+												}
 											}
 										}
+																				
 										String goalsToRun = goalsToRun(project, mavenConsole,
 												phases, resultsList.toArray());
-										goals.setText(goalsToRun);
+										if (goalsToRun != null) {
+											if (singleSelectionMode.getSelection()) {
+												goals.append((goals.getText().trim().length() > 0 ? " " : "")  +  goalsToRun);
+											} else {
+												goals.setText(goalsToRun);
+											}
+										}
 									} else {
-										goals.setText("");
-
+										if (!singleSelectionMode.getSelection()) {
+											goals.setText("");
+										}
 									}
 							    }
+
 								/*
 							     *  (non-Javadoc)
 							     * @see org.eclipse.jface.dialogs.Dialog#createDialogArea(org.eclipse.swt.widgets.Composite)
@@ -438,6 +458,28 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							    @Override
 								protected Control createDialogArea(Composite parent) {
 							        Composite composite = (Composite) super.createDialogArea(parent);
+
+							        GridData clearLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+							        singleSelectionMode = new Button(composite, SWT.CHECK);
+							        singleSelectionMode.setText("Single Selection Mode");
+							        singleSelectionMode.setLayoutData(clearLayoutData);
+							        singleSelectionMode.addSelectionListener(new SelectionListener() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											if (singleSelectionMode.getSelection()) {
+												lastResults.clear();
+												getButton(IDialogConstants.SELECT_ALL_ID).setEnabled(false);
+												getTreeViewer().setCheckedElements(new Object[0]);
+											} else {
+												getButton(IDialogConstants.SELECT_ALL_ID).setEnabled(true);
+											}
+										}
+
+										@Override
+										public void widgetDefaultSelected(SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
 
 							        GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 							        flagsLabel = new Label(composite, SWT.LEFT);
@@ -458,19 +500,18 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							        goalsLayoutData.heightHint = convertHeightInCharsToPixels(4);;
 							        goals = new Text(composite, SWT.MULTI | SWT.WRAP | SWT.BORDER);
 							        goals.setLayoutData(goalsLayoutData);
-							        
+
 							        ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
-										
+
 										@Override
 										public void selectionChanged(SelectionChangedEvent event) {
-											setGoals();
 										}
 									};
 									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
-
+							        
 							        return composite;
 							    }
-							    
+
 							    @Override
 					    		protected void updateOKStatus() {
 					    			super.updateOKStatus();
@@ -495,7 +536,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										@Override
 										public void widgetSelected(
 												SelectionEvent e) {
-											
+
 											String cliFlags = flags.getText();
 											String goalsToRun = goals.getText();
 											close();
@@ -609,7 +650,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			Map<String, List<MojoExecutionKey>> phases, String cliFlags, String goalsToRun,
 			final String mode) {
 		if (goalsToRun.length() > 0) {
-			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, 
+			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,
 					(cliFlags.trim().length() > 0 ? cliFlags + " " : "") + goalsToRun);
 			DebugUITools.launch(launchConfiguration, mode);
 		}

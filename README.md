@@ -12,7 +12,8 @@ Select a Maven project in the IDE and then invoke `Project > Phases and Goals` c
 - Expand All ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/expand_all.png)/Collapse All ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/collapse_all.png)
 - Use the `Log All` ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/log.png) command to print the tree into the Maven Console.
 - Selecting Phase selects associated goals
-
+- In Single Selection Mode, the goals are added to the set in the order in which they were selected. This allows you to run the goals in any order you like.
+ 
 ### Maven enhancement
 
 Ideally this should be available via standard Maven command-line. For example the

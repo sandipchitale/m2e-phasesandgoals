@@ -1,5 +1,8 @@
 package org.eclipse.m2e.core.ui.internal.handlers;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,6 +25,7 @@ import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRoot;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -114,7 +118,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 	private static Map<String, ImageDescriptor> imageDescriptorMap =
 			new HashMap<>();
-
+	
     private static ImageDescriptor getImageDescriptor(String image) {
     	ImageDescriptor imageDescriptor = imageDescriptorMap.get(image);
     	if (imageDescriptor == null) {
@@ -650,8 +654,17 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			Map<String, List<MojoExecutionKey>> phases, String cliFlags, String goalsToRun,
 			final String mode) {
 		if (goalsToRun.length() > 0) {
+			String eventSpyConsoleJarFilePath = "";
+			try {
+				URL eventSpyConsoleJarURL = FileLocator.toFileURL(new URL("platform:/fragment/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar"));
+				eventSpyConsoleJarFilePath = "\"-Dmaven.ext.class.path=" + eventSpyConsoleJarURL.getFile() + "\"";
+			} catch (MalformedURLException e) {
+			} catch (IOException e) {
+			}
 			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,
-					(cliFlags.trim().length() > 0 ? cliFlags + " " : "") + goalsToRun);
+					(eventSpyConsoleJarFilePath.trim().length() > 0 ? eventSpyConsoleJarFilePath + " " : "")
+					+ (cliFlags.trim().length() > 0 ? cliFlags + " " : "")
+					+ goalsToRun);
 			DebugUITools.launch(launchConfiguration, mode);
 		}
 	}

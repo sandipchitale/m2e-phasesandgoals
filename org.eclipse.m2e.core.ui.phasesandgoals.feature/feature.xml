@@ -2,7 +2,7 @@
 <feature
       id="org.eclipse.m2e.core.ui.phasesandgoals.feature"
       label="Phases and Goals Feature"
-      version="1.0.28"
+      version="1.0.50"
       provider-name="Sandip V. Chitale">
 
    <description>
@@ -22,7 +22,6 @@
          download-size="0"
          install-size="0"
          version="0.0.0"
-         fragment="true"
-         unpack="false"/>
+         fragment="true"/>
 
 </feature>

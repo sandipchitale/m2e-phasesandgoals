@@ -16,6 +16,9 @@ public class MavenBuildSpy extends AbstractEventSpy {
 		console = new JFrameMavenBuildSpySink();
 	}
 
+	private long startMillis;
+	private long endMillis;
+	
 	@Override
 	public void onEvent(Object event) throws Exception {
 		if (event instanceof ExecutionEvent) {
@@ -30,20 +33,24 @@ public class MavenBuildSpy extends AbstractEventSpy {
 			} else if (executionEvent.getType() == ExecutionEvent.Type.ProjectSucceeded) {
 			} else if (executionEvent.getType() == ExecutionEvent.Type.ProjectFailed) {
 			} else if (executionEvent.getType() == ExecutionEvent.Type.MojoStarted) {
+				startMillis = System.currentTimeMillis();
 				console.message(
 						executionEvent.getMojoExecution().getArtifactId() + ":"
 								+ executionEvent.getMojoExecution().getGoal() + "@"
-								+ executionEvent.getMojoExecution().getExecutionId() + " ", IMavenBuildSpySink.STATUS.STARTED);
+								+ executionEvent.getMojoExecution().getExecutionId(), IMavenBuildSpySink.STATUS.STARTED);
 			} else if (executionEvent.getType() == ExecutionEvent.Type.MojoSucceeded) {
+				endMillis = System.currentTimeMillis();
 				console.message(
 						executionEvent.getMojoExecution().getArtifactId() + ":"
 								+ executionEvent.getMojoExecution().getGoal() + "@"
-								+ executionEvent.getMojoExecution().getExecutionId() + " ", IMavenBuildSpySink.STATUS.OK);
+								+ executionEvent.getMojoExecution().getExecutionId()
+								+ " [ " + (endMillis - startMillis) + "ms ]", IMavenBuildSpySink.STATUS.OK);
 			} else if (executionEvent.getType() == ExecutionEvent.Type.MojoFailed) {
 				console.message(
 						executionEvent.getMojoExecution().getArtifactId() + ":"
 								+ executionEvent.getMojoExecution().getGoal() + "@"
-								+ executionEvent.getMojoExecution().getExecutionId() + " ", IMavenBuildSpySink.STATUS.KO);
+								+ executionEvent.getMojoExecution().getExecutionId()
+								+ " [ " + (endMillis - startMillis) + "ms ]", IMavenBuildSpySink.STATUS.KO);
 			}
 		}
 	}

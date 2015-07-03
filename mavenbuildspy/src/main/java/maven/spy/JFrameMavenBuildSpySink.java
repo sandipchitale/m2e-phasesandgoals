@@ -75,7 +75,7 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 		contentPane.add(new JLabel("Progress:"), BorderLayout.NORTH);
 		contentPane.add(new JScrollPane(console), BorderLayout.CENTER);
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 400, 600);
+		setBounds(100, 100, 700, 400);
 
 	}
 

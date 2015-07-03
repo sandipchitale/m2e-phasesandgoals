@@ -414,6 +414,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 								private Text flags;
 								private Label goalsLabel;
 								private Button singleSelectionMode;
+								private Button useMavenBuildSpy;
 							    private Text goals;
 
 							    private Set<Object> lastResults = new HashSet<Object>();
@@ -463,10 +464,10 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 								protected Control createDialogArea(Composite parent) {
 							        Composite composite = (Composite) super.createDialogArea(parent);
 
-							        GridData clearLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+							        GridData singleSelectionModeLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 							        singleSelectionMode = new Button(composite, SWT.CHECK);
 							        singleSelectionMode.setText("Single Selection Mode");
-							        singleSelectionMode.setLayoutData(clearLayoutData);
+							        singleSelectionMode.setLayoutData(singleSelectionModeLayoutData);
 							        singleSelectionMode.addSelectionListener(new SelectionListener() {
 										@Override
 										public void widgetSelected(SelectionEvent e) {
@@ -484,6 +485,13 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											widgetSelected(e);
 										}
 									});
+
+							        
+							        GridData useMavenBuildSpyLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+							        useMavenBuildSpy = new Button(composite, SWT.CHECK);
+							        useMavenBuildSpy.setText("Use Maven Build Spy");
+							        useMavenBuildSpy.setLayoutData(useMavenBuildSpyLayoutData);
+							        useMavenBuildSpy.setSelection(true);
 
 							        GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 							        flagsLabel = new Label(composite, SWT.LEFT);
@@ -543,8 +551,9 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 											String cliFlags = flags.getText();
 											String goalsToRun = goals.getText();
+											boolean useMBS = useMavenBuildSpy.getSelection();
 											close();
-											launch(project, mavenConsole, phases, cliFlags, goalsToRun, "run");
+											launch(project, mavenConsole, phases, cliFlags, goalsToRun, useMBS, "run");
 										}
 
 										@Override
@@ -651,15 +660,17 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	}
 
 	private void launch(IProject project, MavenConsoleImpl mavenConsole,
-			Map<String, List<MojoExecutionKey>> phases, String cliFlags, String goalsToRun,
+			Map<String, List<MojoExecutionKey>> phases, String cliFlags, String goalsToRun, boolean useMavenBuildSpy,
 			final String mode) {
 		if (goalsToRun.length() > 0) {
 			String eventSpyConsoleJarFilePath = "";
-			try {
-				URL eventSpyConsoleJarURL = FileLocator.toFileURL(new URL("platform:/fragment/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar"));
-				eventSpyConsoleJarFilePath = "\"-Dmaven.ext.class.path=" + eventSpyConsoleJarURL.getFile() + "\"";
-			} catch (MalformedURLException e) {
-			} catch (IOException e) {
+			if (useMavenBuildSpy) {
+				try {
+					URL eventSpyConsoleJarURL = FileLocator.toFileURL(new URL("platform:/fragment/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar"));
+					eventSpyConsoleJarFilePath = "\"-Dmaven.ext.class.path=" + eventSpyConsoleJarURL.getFile() + "\"";
+				} catch (MalformedURLException e) {
+				} catch (IOException e) {
+				}
 			}
 			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,
 					(eventSpyConsoleJarFilePath.trim().length() > 0 ? eventSpyConsoleJarFilePath + " " : "")

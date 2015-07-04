@@ -46,6 +46,7 @@ public class MavenBuildSpy extends AbstractEventSpy {
 								+ executionEvent.getMojoExecution().getExecutionId()
 								+ " [ " + (endMillis - startMillis) + "ms ]", IMavenBuildSpySink.STATUS.OK);
 			} else if (executionEvent.getType() == ExecutionEvent.Type.MojoFailed) {
+				endMillis = System.currentTimeMillis();
 				console.message(
 						executionEvent.getMojoExecution().getArtifactId() + ":"
 								+ executionEvent.getMojoExecution().getGoal() + "@"

@@ -38,12 +38,14 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 	private DefaultListModel<Message> messageModel;
 	private JList<Message> console;
 //	private static Icon GOAL = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal.png"));
-	private static Icon BLANK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("blank.png"));
-	private static Icon GOAL_OK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal_OK.png"));
-	private static Icon GOAL_KO = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal_KO.png"));
+	private static ImageIcon PHASES_AND_GOALS = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("phasesandgoals.png"));
+	private static ImageIcon BLANK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("blank.png"));
+	private static ImageIcon GOAL_OK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal_OK.png"));
+	private static ImageIcon GOAL_KO = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal_KO.png"));
 
 	public JFrameMavenBuildSpySink() {
 		super("Maven Build Spy Console");
+		setIconImage(PHASES_AND_GOALS.getImage());
 		messageModel = new DefaultListModel<>();
 		console = new JList<Message>(messageModel);
 		console.setFont(new Font(java.awt.Font.MONOSPACED, Font.BOLD, 12));

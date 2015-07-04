@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Phases and goals
 Bundle-SymbolicName: org.eclipse.m2e.core.ui.phasesandgoals;singleton:=true
-Bundle-Version: 1.0.51
+Bundle-Version: 1.0.52
 Bundle-Vendor: Sandip V. Chitale
 Fragment-Host: org.eclipse.m2e.core.ui
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8

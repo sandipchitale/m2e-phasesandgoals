@@ -36,22 +36,22 @@ public class MavenBuildSpy extends AbstractEventSpy {
 				startMillis = System.currentTimeMillis();
 				console.message(
 						executionEvent.getMojoExecution().getArtifactId() + ":"
-								+ executionEvent.getMojoExecution().getGoal() + "@"
-								+ executionEvent.getMojoExecution().getExecutionId(), IMavenBuildSpySink.STATUS.STARTED);
+						+ executionEvent.getMojoExecution().getGoal() + "@"
+						+ executionEvent.getMojoExecution().getExecutionId(), IMavenBuildSpySink.STATUS.STARTED);
 			} else if (executionEvent.getType() == ExecutionEvent.Type.MojoSucceeded) {
 				endMillis = System.currentTimeMillis();
 				console.message(
-						executionEvent.getMojoExecution().getArtifactId() + ":"
-								+ executionEvent.getMojoExecution().getGoal() + "@"
-								+ executionEvent.getMojoExecution().getExecutionId()
-								+ " [ " + (endMillis - startMillis) + "ms ]", IMavenBuildSpySink.STATUS.OK);
+						"[ " + String.format("%9d", (endMillis - startMillis)) + " ms ] "
+						+ executionEvent.getMojoExecution().getArtifactId() + ":"
+						+ executionEvent.getMojoExecution().getGoal() + "@"
+						+ executionEvent.getMojoExecution().getExecutionId(), IMavenBuildSpySink.STATUS.OK);
 			} else if (executionEvent.getType() == ExecutionEvent.Type.MojoFailed) {
 				endMillis = System.currentTimeMillis();
 				console.message(
-						executionEvent.getMojoExecution().getArtifactId() + ":"
-								+ executionEvent.getMojoExecution().getGoal() + "@"
-								+ executionEvent.getMojoExecution().getExecutionId()
-								+ " [ " + (endMillis - startMillis) + "ms ]", IMavenBuildSpySink.STATUS.KO);
+						"[ " + String.format("%9d", (endMillis - startMillis)) + " ms ] "
+						+ executionEvent.getMojoExecution().getArtifactId() + ":"
+						+ executionEvent.getMojoExecution().getGoal() + "@"
+						+ executionEvent.getMojoExecution().getExecutionId(), IMavenBuildSpySink.STATUS.KO, executionEvent.getException());
 			}
 		}
 	}

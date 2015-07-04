@@ -22,14 +22,16 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 	private class Message {
 		String message;
 		STATUS status;
+		Exception exception;
 
-		Message(String message, STATUS status) {
+		Message(String message, STATUS status, Exception exception) {
 			this.message = message;
 			this.status = status;
+			this.exception = exception;
 		}
 
 		public String toString() {
-			return status + " " + message;
+			return status + " " + message + (exception == null ? "" : " [" + exception.getLocalizedMessage() + "]" );
 		}
 	}
 
@@ -66,6 +68,11 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 					renderer.setIcon(BLANK);
 					break;
 				}
+				if (message.exception == null) {
+					renderer.setToolTipText(null);
+				} else {
+					renderer.setToolTipText(message.exception.getMessage());
+				}
 				return renderer;
 			}
 		});
@@ -86,13 +93,20 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 
 	@Override
 	public void message(String message) {
-		messageModel.addElement(new Message(message, STATUS.NONE));
+		messageModel.addElement(new Message(message, STATUS.NONE, null));
 	}
 
 	@Override
 	public void message(String message, STATUS status) {
 		if (status == STATUS.OK || status == STATUS.KO) {
-			messageModel.addElement(new Message(message, status));
+			messageModel.addElement(new Message(message, status, null));
+		}
+	}
+	
+	@Override
+	public void message(String message, STATUS status, Exception e) {
+		if (status == STATUS.OK || status == STATUS.KO) {
+			messageModel.addElement(new Message(message, status, e));
 		}
 	}
 

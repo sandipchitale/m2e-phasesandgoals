@@ -19,7 +19,7 @@ Select a Maven project in the IDE and then invoke `Project > Phases and Goals` c
 
 You can even use the spy in your Maven builds by:
 
-- Downloading the ![Maven Build Spy jar](https://github.com/sandipchitale/m2e-phasesandgoals/blob/master/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar).
+- Downloading the [Maven Build Spy jar](https://github.com/sandipchitale/m2e-phasesandgoals/blob/master/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar).
 - And then passing the following parameter to your mvn build like so:
 
 `> mvn -Dmaven.ext.class.path=path-to/mavenbuildspy.jar ....`

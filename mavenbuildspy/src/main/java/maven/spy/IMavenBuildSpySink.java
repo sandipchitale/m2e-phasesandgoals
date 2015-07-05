@@ -1,12 +1,9 @@
 package maven.spy;
 
+import org.apache.maven.execution.ExecutionEvent;
+
 public interface IMavenBuildSpySink {
-	enum STATUS {NONE, STARTED, OK, KO}
-	public void clear(); 
-	public void message(String message); 
-	public void message(String message, STATUS status); 
-	public void message(String message, STATUS status, Exception e); 
-	public boolean isVisible();
-	public void setVisible(boolean show);
-	public void await();
+	public void start();
+	public void onEvent(ExecutionEvent event) throws Exception;
+	public void shutdown();
 }

@@ -3,6 +3,7 @@ package maven.spy;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.SystemColor;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.concurrent.CountDownLatch;
@@ -48,55 +49,48 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 		}
 
 		public String toString() {
-			return itemType + " [" + status + "] " + message
+			return String.format("%-10s", itemType.toString()) 
+					+ " [" + String.format("%-10s", status.toString())  + "] "
+					+ message
 					+ (exception == null ? "" : " [" + exception.getLocalizedMessage() + "]");
 		}
 	}
 
 	private DefaultListModel<BuildProgressItem> buildProgressItems;
 	private JList<BuildProgressItem> buildProgressConsole;
-	// private static Icon GOAL = new
-	// ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal.png"));
-	private static ImageIcon PHASES_AND_GOALS = new ImageIcon(
-			JFrameMavenBuildSpySink.class.getResource("phasesandgoals.png"));
-	private static ImageIcon BLANK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("blank.png"));
+
 	private static ImageIcon PROJECT = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("project.png"));
 	private static ImageIcon PROJECT_OK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("project_OK.png"));
 	private static ImageIcon PROJECT_KO = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("project_KO.png"));
 	private static ImageIcon GOAL = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal.png"));
 	private static ImageIcon GOAL_OK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal_OK.png"));
 	private static ImageIcon GOAL_KO = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("goal_KO.png"));
+	private static ImageIcon BLANK = new ImageIcon(JFrameMavenBuildSpySink.class.getResource("blank.png"));
 
 	public JFrameMavenBuildSpySink() {
 		super("Maven Build Spy Console");
-		setIconImage(PHASES_AND_GOALS.getImage());
+		setIconImage(PROJECT.getImage());
 		buildProgressItems = new DefaultListModel<>();
 		buildProgressConsole = new JList<BuildProgressItem>(buildProgressItems);
 		buildProgressConsole.setFont(new Font(java.awt.Font.MONOSPACED, Font.BOLD, 12));
+		buildProgressConsole.setBorder(BorderFactory.createEmptyBorder(2,4,2,4));
 		buildProgressConsole.setCellRenderer(new DefaultListCellRenderer() {
 			@Override
 			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected,
 					boolean cellHasFocus) {
-				JLabel renderer = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected,
-						cellHasFocus);
+				JLabel renderer = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 				BuildProgressItem buildProgressItem = (BuildProgressItem) value;
 				renderer.setFont(buildProgressConsole.getFont());
 				renderer.setText(" " + buildProgressItem.message);
+				renderer.setForeground(null);
+				renderer.setBackground(null);
 				switch (buildProgressItem.status) {
 				case STARTED:
+					renderer.setForeground(SystemColor.textInactiveText.brighter().brighter());
 					if (buildProgressItem.itemType == ITEM_TYPE.PROJECT) {
 						renderer.setIcon(PROJECT);
 					} else if (buildProgressItem.itemType == ITEM_TYPE.GOAL) {
 						renderer.setIcon(GOAL);
-					} else {
-						renderer.setIcon(BLANK);
-					}
-					break;
-				case KO:
-					if (buildProgressItem.itemType == ITEM_TYPE.PROJECT) {
-						renderer.setIcon(PROJECT_KO);
-					} else if (buildProgressItem.itemType == ITEM_TYPE.GOAL) {
-						renderer.setIcon(GOAL_KO);
 					} else {
 						renderer.setIcon(BLANK);
 					}
@@ -106,6 +100,16 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 						renderer.setIcon(PROJECT_OK);
 					} else if (buildProgressItem.itemType == ITEM_TYPE.GOAL) {
 						renderer.setIcon(GOAL_OK);
+					} else {
+						renderer.setIcon(BLANK);
+					}
+					break;
+				case KO:
+					renderer.setForeground(SystemColor.red);
+					if (buildProgressItem.itemType == ITEM_TYPE.PROJECT) {
+						renderer.setIcon(PROJECT_KO);
+					} else if (buildProgressItem.itemType == ITEM_TYPE.GOAL) {
+						renderer.setIcon(GOAL_KO);
 					} else {
 						renderer.setIcon(BLANK);
 					}
@@ -123,7 +127,7 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 			}
 		});
 		JComponent contentPane = (JComponent) getContentPane();
-		contentPane.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+		contentPane.setBorder(BorderFactory.createEmptyBorder(4,4,4,4));
 		contentPane.setLayout(new BorderLayout(5, 5));
 		contentPane.add(new JLabel("Progress:"), BorderLayout.NORTH);
 		contentPane.add(new JScrollPane(buildProgressConsole), BorderLayout.CENTER);
@@ -149,36 +153,38 @@ class JFrameMavenBuildSpySink extends JFrame implements IMavenBuildSpySink {
 		} else if (executionEvent.getType() == ExecutionEvent.Type.ProjectStarted) {
 			projectStartMillis = System.currentTimeMillis();
 			addElement(new BuildProgressItem(
-					"[ |   " + String.format("%12s", "Started") + " ] " + executionEvent.getProject().getName(),
+					"[ " + String.format("%12s", "Started") + " ] " + executionEvent.getProject().getName(),
 					ITEM_TYPE.PROJECT, STATUS.STARTED));
 		} else if (executionEvent.getType() == ExecutionEvent.Type.ProjectSucceeded) {
 			projectEndMillis = System.currentTimeMillis();
-			addElement(new BuildProgressItem("[ +   " + String.format("%9d", (projectEndMillis - projectStartMillis))
+			addElement(new BuildProgressItem(
+					"[ " + String.format("%9d", (projectEndMillis - projectStartMillis))
 					+ " ms ] " + executionEvent.getProject().getName(), ITEM_TYPE.PROJECT, STATUS.OK));
 
 		} else if (executionEvent.getType() == ExecutionEvent.Type.ProjectFailed) {
 			projectEndMillis = System.currentTimeMillis();
 			addElement(new BuildProgressItem(
-					"[ -   " + String.format("%9d", (projectEndMillis - projectStartMillis)) + " ms ] "
+					"[ " + String.format("%9d", (projectEndMillis - projectStartMillis)) + " ms ] "
 							+ executionEvent.getProject().getName(),
 					ITEM_TYPE.PROJECT, STATUS.KO, executionEvent.getException()));
 		} else if (executionEvent.getType() == ExecutionEvent.Type.MojoStarted) {
 			startMillis = System.currentTimeMillis();
 			addElement(new BuildProgressItem(
-					"[   | " + String.format("%12s", "Started") + " ] " + executionEvent.getMojoExecution().getArtifactId() + ":"
+					"[ " + String.format("%12s", "Started") + " ] " + executionEvent.getMojoExecution().getArtifactId() + ":"
 							+ executionEvent.getMojoExecution().getGoal() + "@"
 							+ executionEvent.getMojoExecution().getExecutionId(),
 					ITEM_TYPE.GOAL, STATUS.STARTED));
 		} else if (executionEvent.getType() == ExecutionEvent.Type.MojoSucceeded) {
 			endMillis = System.currentTimeMillis();
-			addElement(new BuildProgressItem("[   + " + String.format("%9d", (endMillis - startMillis)) + " ms ] "
+			addElement(new BuildProgressItem(
+					"[ " + String.format("%9d", (endMillis - startMillis)) + " ms ] "
 					+ executionEvent.getMojoExecution().getArtifactId() + ":"
 					+ executionEvent.getMojoExecution().getGoal() + "@"
 					+ executionEvent.getMojoExecution().getExecutionId(), ITEM_TYPE.GOAL, STATUS.OK));
 		} else if (executionEvent.getType() == ExecutionEvent.Type.MojoFailed) {
 			endMillis = System.currentTimeMillis();
 			addElement(new BuildProgressItem(
-					"[   - " + String.format("%9d", (endMillis - startMillis)) + " ms ] "
+					"[ " + String.format("%9d", (endMillis - startMillis)) + " ms ] "
 							+ executionEvent.getMojoExecution().getArtifactId() + ":"
 							+ executionEvent.getMojoExecution().getGoal() + "@"
 							+ executionEvent.getMojoExecution().getExecutionId(),

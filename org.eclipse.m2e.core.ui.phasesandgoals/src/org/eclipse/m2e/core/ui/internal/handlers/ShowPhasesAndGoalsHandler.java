@@ -296,8 +296,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 					IProject project = ((IResource) adapter).getProject();
 					if (project != null) {
 						try {
-							if (project
-									.hasNature("org.eclipse.m2e.core.maven2Nature")) {
+							if (project.hasNature(IMavenConstants.NATURE_ID)) {
 								handleProject(project, activeShell);
 								return null;
 							}
@@ -319,7 +318,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 						if (project != null) {
 							try {
 								if (project
-										.hasNature("org.eclipse.m2e.core.maven2Nature")) {
+										.hasNature(IMavenConstants.NATURE_ID)) {
 									handleProject(project, activeShell);
 									return null;
 								}
@@ -330,23 +329,38 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				}
 			}
 		}
-
+		
+		// If only one open, maven project - use it 
+		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
+		IProject[] projects = workspaceRoot.getProjects();
+		List<IProject> projectsList = new ArrayList<IProject>();
+		for (IProject project : projects) {
+			try {
+				if (project.isOpen() && project.hasNature(IMavenConstants.NATURE_ID)) {
+					projectsList.add(project);
+				}
+			} catch (CoreException e) {
+			}
+		}
+		if (projectsList.size() == 1) {
+			handleProject(projectsList.get(0), activeShell);
+			return null;
+		}
+		
 		ContainerSelectionDialog containerSelectionDialog = new ContainerSelectionDialog(
 				activeShell, null, false, "Select a Maven project");
+		containerSelectionDialog.showClosedProjects(false);
 		containerSelectionDialog.open();
 		Object[] result = containerSelectionDialog.getResult();
 		if (result != null && result.length == 1) {
 			if (result[0] instanceof Path) {
 				Path path = (Path) result[0];
-				IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace()
-						.getRoot();
 				IResource member = workspaceRoot.findMember(path);
 				member = member.getProject();
 				if (member instanceof IProject) {
 					IProject project = (IProject) member;
 					try {
-						if (project
-								.hasNature("org.eclipse.m2e.core.maven2Nature")) {
+						if (project.hasNature(IMavenConstants.NATURE_ID)) {
 							handleProject(project, activeShell);
 							return null;
 						}

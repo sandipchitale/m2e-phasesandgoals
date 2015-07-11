@@ -466,7 +466,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 							        GridData singleSelectionModeLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 							        singleSelectionMode = new Button(composite, SWT.CHECK);
-							        singleSelectionMode.setText("Single Selection Mode");
+							        singleSelectionMode.setText("Run goals in selection order");
 							        singleSelectionMode.setLayoutData(singleSelectionModeLayoutData);
 							        singleSelectionMode.addSelectionListener(new SelectionListener() {
 										@Override
@@ -491,7 +491,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							        useMavenBuildSpy = new Button(composite, SWT.CHECK);
 							        useMavenBuildSpy.setText("Use Maven Build Spy");
 							        useMavenBuildSpy.setLayoutData(useMavenBuildSpyLayoutData);
-							        useMavenBuildSpy.setSelection(true);
+							        useMavenBuildSpy.setSelection(false);
 
 							        GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 							        flagsLabel = new Label(composite, SWT.LEFT);

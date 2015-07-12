@@ -12,7 +12,10 @@ Select a Maven project in the IDE and then invoke `Project > Phases and Goals` c
 - Expand All ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/expand_all.png)/Collapse All ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/collapse_all.png)
 - Use the `Log All` ![](org.eclipse.m2e.core.ui.phasesandgoals/icons/log.png) command to print the tree into the Maven Console.
 - Selecting Phase selects associated goals
-- In Run goals in selection order mode, the goals are added to the set in the order in which they were selected. This allows you to run the goals in any order you like.
+- In `Run goals in selection order mode`, the goals are added to the set in the order in which they were selected. This allows you to run the goals in any order you like.
+- The dialog is now modeless. This allows multiple invocation on different projects.
+- If there are multiple Maven projects in the workspace, a selector for other project's is shown, thus allowing invoking the Phase and Goals dialog on the selected project.
+- If there is only one maven project in the workspace it is always selected.
 - Added a simple Maven Build Spy. It shows the success or failure of the goals, the timing and the exception message as a tooltip for failed goals.
 
 ![Screenshot](org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy.png)

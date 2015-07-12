@@ -47,13 +47,16 @@ import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
+import org.eclipse.jface.viewers.ComboViewer;
 import org.eclipse.jface.viewers.ILabelProvider;
 import org.eclipse.jface.viewers.ILabelProviderListener;
 import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
+import org.eclipse.jface.viewers.IStructuredContentProvider;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.jface.viewers.Viewer;
 import org.eclipse.m2e.actions.MavenLaunchConstants;
 import org.eclipse.m2e.core.MavenPlugin;
@@ -71,6 +74,7 @@ import org.eclipse.m2e.core.project.IMavenProjectRegistry;
 import org.eclipse.m2e.core.project.ResolverConfiguration;
 import org.eclipse.m2e.core.project.configurator.MojoExecutionKey;
 import org.eclipse.m2e.core.ui.internal.M2EUIPluginActivator;
+import org.eclipse.m2e.core.ui.internal.components.MavenProjectLabelProvider;
 import org.eclipse.m2e.core.ui.internal.console.MavenConsoleImpl;
 import org.eclipse.m2e.internal.launch.Messages;
 import org.eclipse.osgi.util.NLS;
@@ -85,6 +89,7 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
@@ -109,42 +114,40 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	private static final String COLLAPSE_ALL = "icons/collapse_all.png";
 
 	private static final String LAUNCH = "icons/launch.png";
-//	private static final String LAUNCH_DEBUG = "icons/launch_debug.png";
+	// private static final String LAUNCH_DEBUG = "icons/launch_debug.png";
 	private static final String LOG = "icons/log.png";
 
 	private static final String PHASES_AND_GOALS = "icons/phasesandgoals.png";
 	private static final String PHASE = "icons/phase.png";
 	private static final String GOAL = "icons/goal.png";
 
-	private static Map<String, ImageDescriptor> imageDescriptorMap =
-			new HashMap<>();
-	
-    private static ImageDescriptor getImageDescriptor(String image) {
-    	ImageDescriptor imageDescriptor = imageDescriptorMap.get(image);
-    	if (imageDescriptor == null) {
-    		imageDescriptor = AbstractUIPlugin.imageDescriptorFromPlugin(M2EUIPluginActivator.PLUGIN_ID, image);
-    		if (imageDescriptor != null) {
-    			imageDescriptorMap.put(image, imageDescriptor);
-    		}
-    	}
-    	return imageDescriptor;
-    }
+	private static Map<String, ImageDescriptor> imageDescriptorMap = new HashMap<>();
 
-    private static Map<String, Image> imageMap =
-			new HashMap<>();
+	private static ImageDescriptor getImageDescriptor(String image) {
+		ImageDescriptor imageDescriptor = imageDescriptorMap.get(image);
+		if (imageDescriptor == null) {
+			imageDescriptor = AbstractUIPlugin.imageDescriptorFromPlugin(M2EUIPluginActivator.PLUGIN_ID, image);
+			if (imageDescriptor != null) {
+				imageDescriptorMap.put(image, imageDescriptor);
+			}
+		}
+		return imageDescriptor;
+	}
 
-    private static Image getImageForName(Device device, String imageName) {
-    	Image image = imageMap.get(imageName);
-    	if (image == null) {
-    		ImageDescriptor imageDescriptor = getImageDescriptor(imageName);
-    		if (imageDescriptor == null) {
-    			return null;
-    		}
-    		image = new Image(device, imageDescriptor.getImageData());
-    		imageMap.put(imageName, image);
-    	}
-    	return image;
-    }
+	private static Map<String, Image> imageMap = new HashMap<>();
+
+	private static Image getImageForName(Device device, String imageName) {
+		Image image = imageMap.get(imageName);
+		if (image == null) {
+			ImageDescriptor imageDescriptor = getImageDescriptor(imageName);
+			if (imageDescriptor == null) {
+				return null;
+			}
+			image = new Image(device, imageDescriptor.getImageData());
+			imageMap.put(imageName, image);
+		}
+		return image;
+	}
 
 	private static final Logger log = LoggerFactory.getLogger(ShowPhasesAndGoalsHandler.class);
 
@@ -153,6 +156,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	private static String SITE = "Site";
 	private static String OTHER = "Other";
 	private static Map<String, String> phaseToLikelyLifecycle = new HashMap<>();
+
 	static {
 		// Clean lifecycle
 		phaseToLikelyLifecycle.put("pre-clean", CLEAN);
@@ -317,8 +321,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 						IProject project = iFile.getProject();
 						if (project != null) {
 							try {
-								if (project
-										.hasNature(IMavenConstants.NATURE_ID)) {
+								if (project.hasNature(IMavenConstants.NATURE_ID)) {
 									handleProject(project, activeShell);
 									return null;
 								}
@@ -329,8 +332,8 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				}
 			}
 		}
-		
-		// If only one open, maven project - use it 
+
+		// If only one open, maven project - use it
 		IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
 		IProject[] projects = workspaceRoot.getProjects();
 		List<IProject> projectsList = new ArrayList<IProject>();
@@ -346,9 +349,9 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			handleProject(projectsList.get(0), activeShell);
 			return null;
 		}
-		
-		ContainerSelectionDialog containerSelectionDialog = new ContainerSelectionDialog(
-				activeShell, null, false, "Select a Maven project");
+
+		ContainerSelectionDialog containerSelectionDialog = new ContainerSelectionDialog(activeShell, null, false,
+				"Select a Maven project");
 		containerSelectionDialog.showClosedProjects(false);
 		containerSelectionDialog.open();
 		Object[] result = containerSelectionDialog.getResult();
@@ -373,36 +376,27 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	}
 
 	private void handleProject(final IProject project, final Shell shell) {
-		final MavenConsoleImpl mavenConsole = M2EUIPluginActivator.getDefault()
-				.getMavenConsole();
+		final MavenConsoleImpl mavenConsole = M2EUIPluginActivator.getDefault().getMavenConsole();
 		mavenConsole.show(true);
-		final IMavenProjectRegistry projectRegistry = MavenPlugin
-				.getMavenProjectRegistry();
+		final IMavenProjectRegistry projectRegistry = MavenPlugin.getMavenProjectRegistry();
 		final IMavenProjectFacade facade = projectRegistry.getProject(project);
 		try {
 			projectRegistry.execute(facade, new ICallable<Void>() {
-				public Void call(IMavenExecutionContext context,
-						IProgressMonitor monitor) throws CoreException {
+				public Void call(IMavenExecutionContext context, IProgressMonitor monitor) throws CoreException {
 					MavenProject mavenProject = facade.getMavenProject(monitor);
-					List<MojoExecution> mojoExecutions = ((MavenProjectFacade) facade)
-							.getMojoExecutions(monitor);
-					LifecycleMappingResult mappingResult = LifecycleMappingFactory
-							.calculateLifecycleMapping(mavenProject,
-									mojoExecutions, facade
-											.getResolverConfiguration()
-											.getLifecycleMappingId(), monitor);
+					List<MojoExecution> mojoExecutions = ((MavenProjectFacade) facade).getMojoExecutions(monitor);
+					LifecycleMappingResult mappingResult = LifecycleMappingFactory.calculateLifecycleMapping(
+							mavenProject, mojoExecutions, facade.getResolverConfiguration().getLifecycleMappingId(),
+							monitor);
 					Map<MojoExecutionKey, List<IPluginExecutionMetadata>> mojoExecutionMapping = mappingResult
 							.getMojoExecutionMapping();
 
 					Map<String, List<MojoExecutionKey>> phases = new LinkedHashMap<String, List<MojoExecutionKey>>();
-					for (MojoExecutionKey execution : mojoExecutionMapping
-							.keySet()) {
-						List<MojoExecutionKey> executions = phases
-								.get(execution.getLifecyclePhase());
+					for (MojoExecutionKey execution : mojoExecutionMapping.keySet()) {
+						List<MojoExecutionKey> executions = phases.get(execution.getLifecyclePhase());
 						if (executions == null) {
 							executions = new ArrayList<MojoExecutionKey>();
-							phases.put(execution.getLifecyclePhase(),
-									executions);
+							phases.put(execution.getLifecyclePhase(), executions);
 						}
 						executions.add(execution);
 					}
@@ -412,37 +406,45 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 						@Override
 						public void run() {
 							final String[] mavenVersion = new String[] { "0.0.0" };
-							AbstractMavenRuntime runtime = MavenPluginActivator.getDefault()
-									.getMavenRuntimeManager()
+							AbstractMavenRuntime runtime = MavenPluginActivator.getDefault().getMavenRuntimeManager()
 									.getRuntime(org.eclipse.m2e.core.internal.launch.MavenRuntimeManagerImpl.DEFAULT);
 							if (runtime != null) {
 								mavenVersion[0] = runtime.getVersion();
 							}
-							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider =
-									new PhasesAndGoalsLabelProvider(shell.getDisplay());
-							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new CheckedTreeSelectionDialog(
-									shell, phasesAndGoalsLabelProvider,
-									new PhasesAndGoalsContentProvider(phases)) {
+							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider = new PhasesAndGoalsLabelProvider(
+									shell.getDisplay());
+							
+							class ModelessCheckedTreeSelectionDialog extends CheckedTreeSelectionDialog {
+								public ModelessCheckedTreeSelectionDialog(Shell parent, ILabelProvider labelProvider,
+										ITreeContentProvider contentProvider) {
+									super(parent, labelProvider, contentProvider);
+									setShellStyle(SWT.CLOSE | SWT.MODELESS | SWT.BORDER | SWT.TITLE);
+									setBlockOnOpen(false);
+								}
+							}
+							
+							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new ModelessCheckedTreeSelectionDialog(
+									shell, phasesAndGoalsLabelProvider, new PhasesAndGoalsContentProvider(phases)) {
 
-								private Label flagsLabel;
 								private Text flags;
 								private Label goalsLabel;
 								private Button singleSelectionMode;
 								private Button useMavenBuildSpy;
-							    private Text goals;
+								private Text goals;
 
-							    private Set<Object> lastResults = new HashSet<Object>();
-							    
-							    private void setGoals() {
-							        final CheckboxTreeViewer treeViewer = getTreeViewer();
+								private Set<Object> lastResults = new HashSet<Object>();
 
-							    	computeResult();
+								private void setGoals() {
+									final CheckboxTreeViewer treeViewer = getTreeViewer();
+
+									computeResult();
 									Object[] results = getResult();
 									if (results != null && results.length > 0) {
 										List<Object> resultsList = new LinkedList<Object>();
 										for (Object result : results) {
 											if (!treeViewer.getGrayed(result)) {
-												// Check against remembered results
+												// Check against remembered
+												// results
 												if (singleSelectionMode.getSelection()) {
 													if (!lastResults.contains(result)) {
 														resultsList.add(result);
@@ -453,12 +455,13 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 												}
 											}
 										}
-																				
-										String goalsToRun = goalsToRun(project, mavenConsole,
-												phases, resultsList.toArray());
+
+										String goalsToRun = goalsToRun(project, mavenConsole, phases,
+												resultsList.toArray());
 										if (goalsToRun != null) {
 											if (singleSelectionMode.getSelection()) {
-												goals.append((goals.getText().trim().length() > 0 ? " " : "")  +  goalsToRun);
+												goals.append(
+														(goals.getText().trim().length() > 0 ? " " : "") + goalsToRun);
 											} else {
 												goals.setText(goalsToRun);
 											}
@@ -468,21 +471,98 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											goals.setText("");
 										}
 									}
-							    }
-
+								}
+								
+								@Override
+								protected void setShellStyle(int newShellStyle) {           
+								    super.setShellStyle(SWT.CLOSE | SWT.MODELESS| SWT.BORDER | SWT.TITLE);
+								    setBlockOnOpen(false);
+								}
+								
 								/*
-							     *  (non-Javadoc)
-							     * @see org.eclipse.jface.dialogs.Dialog#createDialogArea(org.eclipse.swt.widgets.Composite)
-							     */
-							    @Override
+								 * (non-Javadoc)
+								 *
+								 * @see org.eclipse.jface.dialogs.Dialog#
+								 * createDialogArea(org.eclipse.swt.widgets.
+								 * Composite)
+								 */
+								@Override
 								protected Control createDialogArea(Composite parent) {
-							        Composite composite = (Composite) super.createDialogArea(parent);
+									Composite composite = (Composite) super.createDialogArea(parent);
 
-							        GridData singleSelectionModeLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-							        singleSelectionMode = new Button(composite, SWT.CHECK);
-							        singleSelectionMode.setText("Run goals in selection order");
-							        singleSelectionMode.setLayoutData(singleSelectionModeLayoutData);
-							        singleSelectionMode.addSelectionListener(new SelectionListener() {
+									// If only one open, maven project - use it
+									IWorkspaceRoot workspaceRoot = ResourcesPlugin.getWorkspace().getRoot();
+									IProject[] projects = workspaceRoot.getProjects();
+									final List<IProject> projectsList = new ArrayList<IProject>();
+									for (IProject p : projects) {
+										try {
+											if (p.isOpen() && p.hasNature(IMavenConstants.NATURE_ID) && p != project) {
+												projectsList.add(p);
+											}
+										} catch (CoreException e) {
+										}
+									}
+									if (projectsList.size() > 0) {
+										GridData otherProjectLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+										Label otherProjectLabel = new Label(composite, SWT.LEFT);
+										otherProjectLabel.setText("Phases and Goals of other Maven project:");
+										otherProjectLabel.setLayoutData(otherProjectLabelLayoutData);
+
+										GridData selectMavenProjectLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+										ComboViewer selectMavenProjectComboViewer = new ComboViewer(composite,
+												SWT.SINGLE | SWT.BORDER | SWT.READ_ONLY);
+										selectMavenProjectComboViewer.setLabelProvider(new MavenProjectLabelProvider());
+										Combo selectMavenProjectCombo = selectMavenProjectComboViewer.getCombo();
+										selectMavenProjectCombo.setLayoutData(selectMavenProjectLayoutData);
+
+										selectMavenProjectComboViewer
+												.setContentProvider(new IStructuredContentProvider() {
+
+											@Override
+											public void dispose() {
+											}
+
+											@Override
+											public Object[] getElements(Object inputElement) {
+												return projectsList.toArray();
+											}
+
+											@Override
+											public void inputChanged(org.eclipse.jface.viewers.Viewer viewer,
+													Object oldInput, Object newInput) {
+												// Nothing to do
+											}
+
+										});
+										selectMavenProjectComboViewer.setInput(projectsList);
+										selectMavenProjectComboViewer
+												.addSelectionChangedListener(new ISelectionChangedListener() {
+											
+											private boolean suspended = false;
+											@Override
+											public void selectionChanged(SelectionChangedEvent event) {
+												if (!suspended) {
+													IStructuredSelection selection = (IStructuredSelection) event
+															.getSelection();
+													if (selection != null) {
+														try {
+															suspended = true;
+															selectMavenProjectComboViewer.setSelection(new StructuredSelection());
+														} finally {
+															suspended = false;
+														}
+														handleProject((IProject) selection.getFirstElement(), shell);
+													}
+												}
+											}
+										});
+									}
+
+									GridData singleSelectionModeLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+									singleSelectionMode = new Button(composite, SWT.CHECK);
+									singleSelectionMode.setText("Run goals in selection order");
+									singleSelectionMode.setLayoutData(singleSelectionModeLayoutData);
+									singleSelectionMode.addSelectionListener(new SelectionListener() {
 										@Override
 										public void widgetSelected(SelectionEvent e) {
 											if (singleSelectionMode.getSelection()) {
@@ -500,58 +580,57 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									});
 
-							        
-							        GridData useMavenBuildSpyLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-							        useMavenBuildSpy = new Button(composite, SWT.CHECK);
-							        useMavenBuildSpy.setText("Use Maven Build Spy");
-							        useMavenBuildSpy.setLayoutData(useMavenBuildSpyLayoutData);
-							        useMavenBuildSpy.setSelection(false);
+									GridData useMavenBuildSpyLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+									useMavenBuildSpy = new Button(composite, SWT.CHECK);
+									useMavenBuildSpy.setText("Use Maven Build Spy");
+									useMavenBuildSpy.setLayoutData(useMavenBuildSpyLayoutData);
+									useMavenBuildSpy.setSelection(false);
 
-							        GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-							        flagsLabel = new Label(composite, SWT.LEFT);
-							        flagsLabel.setText("Maven Command Line Options:");
-							        flagsLabel.setLayoutData(flagsLabelLayoutData);
+									GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+									Label flagsLabel = new Label(composite, SWT.LEFT);
+									flagsLabel.setText("Maven Command Line Options:");
+									flagsLabel.setLayoutData(flagsLabelLayoutData);
 
-							        GridData flagsLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-							        flags = new Text(composite, SWT.SINGLE | SWT.BORDER);
-							        flags.setText("-B");
-							        flags.setLayoutData(flagsLayoutData);
+									GridData flagsLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+									flags = new Text(composite, SWT.SINGLE | SWT.BORDER);
+									flags.setText("-B");
+									flags.setLayoutData(flagsLayoutData);
 
-							        GridData goalsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-							        goalsLabel = new Label(composite, SWT.LEFT);
-							        goalsLabel.setText("Goals:");
-							        goalsLabel.setLayoutData(goalsLabelLayoutData);
+									GridData goalsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+									goalsLabel = new Label(composite, SWT.LEFT);
+									goalsLabel.setText("Goals:");
+									goalsLabel.setLayoutData(goalsLabelLayoutData);
 
-							        GridData goalsLayoutData = new GridData(GridData.FILL_BOTH);
-							        goalsLayoutData.heightHint = convertHeightInCharsToPixels(4);;
-							        goals = new Text(composite, SWT.MULTI | SWT.WRAP | SWT.BORDER);
-							        goals.setLayoutData(goalsLayoutData);
+									GridData goalsLayoutData = new GridData(GridData.FILL_BOTH);
+									goalsLayoutData.heightHint = convertHeightInCharsToPixels(4);
+									;
+									goals = new Text(composite, SWT.MULTI | SWT.WRAP | SWT.BORDER);
+									goals.setLayoutData(goalsLayoutData);
 
-							        ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
+									ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
 
 										@Override
 										public void selectionChanged(SelectionChangedEvent event) {
 										}
 									};
 									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
-							        
-							        return composite;
-							    }
 
-							    @Override
-					    		protected void updateOKStatus() {
-					    			super.updateOKStatus();
-					    			getShell().getDisplay().asyncExec(new Runnable() {
+									return composite;
+								}
+
+								@Override
+								protected void updateOKStatus() {
+									super.updateOKStatus();
+									getShell().getDisplay().asyncExec(new Runnable() {
 										@Override
 										public void run() {
 											setGoals();
 										}
 									});
-					    		}
+								}
 
 								@Override
-								protected void createButtonsForButtonBar(
-										Composite parent) {
+								protected void createButtonsForButtonBar(Composite parent) {
 
 									((GridLayout) parent.getLayout()).numColumns++;
 									Button button = new Button(parent, SWT.PUSH);
@@ -560,8 +639,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									button.addSelectionListener(new SelectionListener() {
 
 										@Override
-										public void widgetSelected(
-												SelectionEvent e) {
+										public void widgetSelected(SelectionEvent e) {
 
 											String cliFlags = flags.getText();
 											String goalsToRun = goals.getText();
@@ -571,8 +649,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 
 										@Override
-										public void widgetDefaultSelected(
-												SelectionEvent e) {
+										public void widgetDefaultSelected(SelectionEvent e) {
 											widgetSelected(e);
 										}
 									});
@@ -588,14 +665,12 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									button.addSelectionListener(new SelectionListener() {
 
 										@Override
-										public void widgetSelected(
-												SelectionEvent e) {
+										public void widgetSelected(SelectionEvent e) {
 											getTreeViewer().expandAll();
 										}
 
 										@Override
-										public void widgetDefaultSelected(
-												SelectionEvent e) {
+										public void widgetDefaultSelected(SelectionEvent e) {
 											widgetSelected(e);
 										}
 									});
@@ -608,14 +683,12 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									button.addSelectionListener(new SelectionListener() {
 
 										@Override
-										public void widgetSelected(
-												SelectionEvent e) {
+										public void widgetSelected(SelectionEvent e) {
 											getTreeViewer().collapseAll();
 										}
 
 										@Override
-										public void widgetDefaultSelected(
-												SelectionEvent e) {
+										public void widgetDefaultSelected(SelectionEvent e) {
 											widgetSelected(e);
 										}
 									});
@@ -628,31 +701,25 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									button.addSelectionListener(new SelectionListener() {
 
 										@Override
-										public void widgetSelected(
-												SelectionEvent e) {
+										public void widgetSelected(SelectionEvent e) {
 											close();
-											toConsole(project, mavenConsole,
-													phases);
+											toConsole(project, mavenConsole, phases);
 										}
 
 										@Override
-										public void widgetDefaultSelected(
-												SelectionEvent e) {
+										public void widgetDefaultSelected(SelectionEvent e) {
 											widgetSelected(e);
 										}
 									});
 									setButtonLayoutData(button);
-									createButton(parent,
-											IDialogConstants.CANCEL_ID,
-											IDialogConstants.CANCEL_LABEL, true);
+									createButton(parent, IDialogConstants.CANCEL_ID, IDialogConstants.CANCEL_LABEL,
+											true);
 								}
 							};
-							phasesAndGoalsDialog
-									.setTitle("Phases and Goals of "
-											+ project.getName());
+							phasesAndGoalsDialog.setTitle("Phases and Goals of " + project.getName());
 							phasesAndGoalsDialog.setMessage("Select Phases and Goals from: " + project.getName()
-									+ ((mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0)) ?
-											  "\nLaunch selected goals disabled. Maven Version > 3.3.1 is required."
+									+ ((mavenVersion[0] != null && ("3.3.1".compareTo(mavenVersion[0]) > 0))
+											? "\nLaunch selected goals disabled. Maven Version > 3.3.1 is required."
 											: ""));
 							phasesAndGoalsDialog.setImage(getImageForName(shell.getDisplay(), PHASES_AND_GOALS));
 							phasesAndGoalsDialog.setHelpAvailable(false);
@@ -669,18 +736,18 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 			}, new NullProgressMonitor());
 		} catch (CoreException ex) {
-	        log.error(ex.getMessage(), ex);
+			log.error(ex.getMessage(), ex);
 		}
 	}
 
-	private void launch(IProject project, MavenConsoleImpl mavenConsole,
-			Map<String, List<MojoExecutionKey>> phases, String cliFlags, String goalsToRun, boolean useMavenBuildSpy,
-			final String mode) {
+	private void launch(IProject project, MavenConsoleImpl mavenConsole, Map<String, List<MojoExecutionKey>> phases,
+			String cliFlags, String goalsToRun, boolean useMavenBuildSpy, final String mode) {
 		if (goalsToRun.length() > 0) {
 			String eventSpyConsoleJarFilePath = "";
 			if (useMavenBuildSpy) {
 				try {
-					URL eventSpyConsoleJarURL = FileLocator.toFileURL(new URL("platform:/fragment/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar"));
+					URL eventSpyConsoleJarURL = FileLocator.toFileURL(new URL(
+							"platform:/fragment/org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy/mavenbuildspy.jar"));
 					eventSpyConsoleJarFilePath = "\"-Dmaven.ext.class.path=" + eventSpyConsoleJarURL.getFile() + "\"";
 				} catch (MalformedURLException e) {
 				} catch (IOException e) {
@@ -688,8 +755,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			}
 			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,
 					(eventSpyConsoleJarFilePath.trim().length() > 0 ? eventSpyConsoleJarFilePath + " " : "")
-					+ (cliFlags.trim().length() > 0 ? cliFlags + " " : "")
-					+ goalsToRun);
+							+ (cliFlags.trim().length() > 0 ? cliFlags + " " : "") + goalsToRun);
 			DebugUITools.launch(launchConfiguration, mode);
 		}
 	}
@@ -728,7 +794,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		return null;
 	}
 
-
 	private void toConsole(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases) {
 		mavenConsole.info("Project: " + project.getName());
@@ -744,8 +809,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			mavenConsole.info("+-- Phase: " + phase + " (Lifecycle: " + lifecycle + ")");
 			for (MojoExecutionKey pluginExecutionMetadata : goals) {
 				mavenConsole.info("|   |");
-				mavenConsole.info("|   +-- Goal: "
-						+ goal(pluginExecutionMetadata));
+				mavenConsole.info("|   +-- Goal: " + goal(pluginExecutionMetadata));
 			}
 		}
 		mavenConsole.info("O");
@@ -774,53 +838,43 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		// shorten artifactId
 		String artifactId = execution.getArtifactId();
 		if (artifactId.endsWith("-maven-plugin")) { //$NON-NLS-1$
-			artifactId = artifactId.substring(0, artifactId.length()
-					- "-maven-plugin".length()); //$NON-NLS-1$
+			artifactId = artifactId.substring(0, artifactId.length() - "-maven-plugin".length()); //$NON-NLS-1$
 		} else if (artifactId.startsWith("maven-") && artifactId.endsWith("-plugin")) { //$NON-NLS-1$ //$NON-NLS-2$
-			artifactId = artifactId
-					.substring(
-							"maven-".length(), artifactId.length() - "-plugin".length()); //$NON-NLS-1$ //$NON-NLS-2$
+			artifactId = artifactId.substring("maven-".length(), artifactId.length() - "-plugin".length()); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return artifactId;
 	}
 
-	private ILaunchConfiguration createLaunchConfiguration(IContainer basedir,
-			String goals) {
+	private ILaunchConfiguration createLaunchConfiguration(IContainer basedir, String goals) {
 		try {
-			ILaunchManager launchManager = DebugPlugin.getDefault()
-					.getLaunchManager();
+			ILaunchManager launchManager = DebugPlugin.getDefault().getLaunchManager();
 			ILaunchConfigurationType launchConfigurationType = launchManager
 					.getLaunchConfigurationType(MavenLaunchConstants.LAUNCH_CONFIGURATION_TYPE_ID);
 
 			String launchSafeGoalName = goals.replace(':', '-');
 
-			ILaunchConfigurationWorkingCopy workingCopy = launchConfigurationType
-					.newInstance(
-							null, //
-							NLS.bind(Messages.ExecutePomAction_executing,
-									launchSafeGoalName, basedir.getLocation()
-											.toString().replace('/', '-')));
-			workingCopy.setAttribute(MavenLaunchConstants.ATTR_POM_DIR, basedir
-					.getLocation().toOSString());
+			ILaunchConfigurationWorkingCopy workingCopy = launchConfigurationType.newInstance(null, //
+					NLS.bind(Messages.ExecutePomAction_executing, launchSafeGoalName,
+							basedir.getLocation().toString().replace('/', '-')));
+			workingCopy.setAttribute(MavenLaunchConstants.ATTR_POM_DIR, basedir.getLocation().toOSString());
 			workingCopy.setAttribute(MavenLaunchConstants.ATTR_GOALS, goals);
 			workingCopy.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
-			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_SCOPE,
-					"${project}"); //$NON-NLS-1$
+			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_SCOPE, "${project}"); //$NON-NLS-1$
 			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_RECURSIVE, true);
 
 			setProjectConfiguration(workingCopy, basedir);
 
 			IPath path = getJREContainerPath(basedir);
 			if (path != null) {
-				workingCopy
-						.setAttribute(
-								IJavaLaunchConfigurationConstants.ATTR_JRE_CONTAINER_PATH,
-								path.toPortableString());
+				workingCopy.setAttribute(IJavaLaunchConfigurationConstants.ATTR_JRE_CONTAINER_PATH,
+						path.toPortableString());
 			}
 
 			// TODO when launching Maven with debugger consider to add the
 			// following property
-			// -Dmaven.surefire.debug="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000 -Xnoagent -Djava.compiler=NONE"
+			// -Dmaven.surefire.debug="-Xdebug
+			// -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000
+			// -Xnoagent -Djava.compiler=NONE"
 
 			return workingCopy;
 		} catch (CoreException ex) {
@@ -828,22 +882,16 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		return null;
 	}
 
-	private void setProjectConfiguration(
-			ILaunchConfigurationWorkingCopy workingCopy, IContainer basedir) {
-		IMavenProjectRegistry projectManager = MavenPlugin
-				.getMavenProjectRegistry();
-		IFile pomFile = basedir
-				.getFile(new Path(IMavenConstants.POM_FILE_NAME));
-		IMavenProjectFacade projectFacade = projectManager.create(pomFile,
-				false, new NullProgressMonitor());
+	private void setProjectConfiguration(ILaunchConfigurationWorkingCopy workingCopy, IContainer basedir) {
+		IMavenProjectRegistry projectManager = MavenPlugin.getMavenProjectRegistry();
+		IFile pomFile = basedir.getFile(new Path(IMavenConstants.POM_FILE_NAME));
+		IMavenProjectFacade projectFacade = projectManager.create(pomFile, false, new NullProgressMonitor());
 		if (projectFacade != null) {
-			ResolverConfiguration configuration = projectFacade
-					.getResolverConfiguration();
+			ResolverConfiguration configuration = projectFacade.getResolverConfiguration();
 
 			String selectedProfiles = configuration.getSelectedProfiles();
 			if (selectedProfiles != null && selectedProfiles.length() > 0) {
-				workingCopy.setAttribute(MavenLaunchConstants.ATTR_PROFILES,
-						selectedProfiles);
+				workingCopy.setAttribute(MavenLaunchConstants.ATTR_PROFILES, selectedProfiles);
 			}
 		}
 	}
@@ -857,8 +905,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			IClasspathEntry[] entries = javaProject.getRawClasspath();
 			for (int i = 0; i < entries.length; i++) {
 				IClasspathEntry entry = entries[i];
-				if (JavaRuntime.JRE_CONTAINER
-						.equals(entry.getPath().segment(0))) {
+				if (JavaRuntime.JRE_CONTAINER.equals(entry.getPath().segment(0))) {
 					return entry.getPath();
 				}
 			}
@@ -868,10 +915,9 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 	public static void copyToClipboard(String string) {
 		// Get Clipboard
-		Clipboard clipboard = new Clipboard(PlatformUI.getWorkbench()
-				.getActiveWorkbenchWindow().getShell().getDisplay());
+		Clipboard clipboard = new Clipboard(
+				PlatformUI.getWorkbench().getActiveWorkbenchWindow().getShell().getDisplay());
 		// Put the paths string into the Clipboard
-		clipboard.setContents(new Object[] { string },
-				new Transfer[] { TextTransfer.getInstance() });
+		clipboard.setContents(new Object[] { string }, new Transfer[] { TextTransfer.getInstance() });
 	}
 }

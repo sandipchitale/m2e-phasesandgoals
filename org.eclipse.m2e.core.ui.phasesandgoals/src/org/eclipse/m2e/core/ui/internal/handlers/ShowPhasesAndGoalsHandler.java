@@ -418,8 +418,12 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 								public ModelessCheckedTreeSelectionDialog(Shell parent, ILabelProvider labelProvider,
 										ITreeContentProvider contentProvider) {
 									super(parent, labelProvider, contentProvider);
-									setShellStyle(SWT.CLOSE | SWT.MODELESS | SWT.BORDER | SWT.TITLE);
+									setShellStyle(SWT.DIALOG_TRIM | SWT.MODELESS | SWT.BORDER | SWT.RESIZE | SWT.TITLE | SWT.MAX | SWT.CLOSE);
 									setBlockOnOpen(false);
+								}
+								
+								protected boolean isResizable() {
+									return true;
 								}
 							}
 							
@@ -471,12 +475,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											goals.setText("");
 										}
 									}
-								}
-								
-								@Override
-								protected void setShellStyle(int newShellStyle) {           
-								    super.setShellStyle(SWT.CLOSE | SWT.MODELESS| SWT.BORDER | SWT.TITLE);
-								    setBlockOnOpen(false);
 								}
 								
 								/*

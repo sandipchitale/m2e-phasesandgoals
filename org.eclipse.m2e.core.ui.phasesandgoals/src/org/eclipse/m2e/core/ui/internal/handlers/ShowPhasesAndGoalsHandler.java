@@ -45,6 +45,7 @@ import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.JavaRuntime;
 import org.eclipse.jface.dialogs.IDialogConstants;
+import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.CheckboxTreeViewer;
 import org.eclipse.jface.viewers.ComboViewer;
@@ -413,7 +414,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 							}
 							PhasesAndGoalsLabelProvider phasesAndGoalsLabelProvider = new PhasesAndGoalsLabelProvider(
 									shell.getDisplay());
-							
+
 							class ModelessCheckedTreeSelectionDialog extends CheckedTreeSelectionDialog {
 								public ModelessCheckedTreeSelectionDialog(Shell parent, ILabelProvider labelProvider,
 										ITreeContentProvider contentProvider) {
@@ -421,18 +422,18 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									setShellStyle(SWT.DIALOG_TRIM | SWT.MODELESS | SWT.BORDER | SWT.RESIZE | SWT.TITLE | SWT.MAX | SWT.CLOSE);
 									setBlockOnOpen(false);
 								}
-								
+
 								protected boolean isResizable() {
 									return true;
 								}
 							}
-							
+
 							final CheckedTreeSelectionDialog phasesAndGoalsDialog = new ModelessCheckedTreeSelectionDialog(
 									shell, phasesAndGoalsLabelProvider, new PhasesAndGoalsContentProvider(phases)) {
 
 								private Text flags;
 								private Label goalsLabel;
-								private Button singleSelectionMode;
+								private Button runGoalsInSelectionOrderMode;
 								private Button useMavenBuildSpy;
 								private Text goals;
 
@@ -449,7 +450,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											if (!treeViewer.getGrayed(result)) {
 												// Check against remembered
 												// results
-												if (singleSelectionMode.getSelection()) {
+												if (runGoalsInSelectionOrderMode.getSelection()) {
 													if (!lastResults.contains(result)) {
 														resultsList.add(result);
 														lastResults.add(result);
@@ -463,7 +464,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										String goalsToRun = goalsToRun(project, mavenConsole, phases,
 												resultsList.toArray());
 										if (goalsToRun != null) {
-											if (singleSelectionMode.getSelection()) {
+											if (runGoalsInSelectionOrderMode.getSelection()) {
 												goals.append(
 														(goals.getText().trim().length() > 0 ? " " : "") + goalsToRun);
 											} else {
@@ -471,12 +472,12 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											}
 										}
 									} else {
-										if (!singleSelectionMode.getSelection()) {
+										if (!runGoalsInSelectionOrderMode.getSelection()) {
 											goals.setText("");
 										}
 									}
 								}
-								
+
 								/*
 								 * (non-Javadoc)
 								 *
@@ -535,7 +536,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										selectMavenProjectComboViewer.setInput(projectsList);
 										selectMavenProjectComboViewer
 												.addSelectionChangedListener(new ISelectionChangedListener() {
-											
+
 											private boolean suspended = false;
 											@Override
 											public void selectionChanged(SelectionChangedEvent event) {
@@ -557,19 +558,21 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									}
 
 									GridData singleSelectionModeLayoutData = new GridData(GridData.FILL_HORIZONTAL);
-									singleSelectionMode = new Button(composite, SWT.CHECK);
-									singleSelectionMode.setText("Run goals in selection order");
-									singleSelectionMode.setLayoutData(singleSelectionModeLayoutData);
-									singleSelectionMode.addSelectionListener(new SelectionListener() {
+									runGoalsInSelectionOrderMode = new Button(composite, SWT.CHECK);
+									runGoalsInSelectionOrderMode.setText("Run goals in selection order");
+									runGoalsInSelectionOrderMode.setLayoutData(singleSelectionModeLayoutData);
+									runGoalsInSelectionOrderMode.addSelectionListener(new SelectionListener() {
 										@Override
 										public void widgetSelected(SelectionEvent e) {
-											if (singleSelectionMode.getSelection()) {
+											if (runGoalsInSelectionOrderMode.getSelection()) {
 												lastResults.clear();
 												getButton(IDialogConstants.SELECT_ALL_ID).setEnabled(false);
 												getTreeViewer().setCheckedElements(new Object[0]);
 											} else {
 												getButton(IDialogConstants.SELECT_ALL_ID).setEnabled(true);
 											}
+											IDialogSettings dialogSettings = M2EUIPluginActivator.getDefault().getDialogSettings();
+											dialogSettings.put("phasesandgoals.runGoalsInSelectionOrder", runGoalsInSelectionOrderMode.getSelection());
 										}
 
 										@Override
@@ -583,6 +586,18 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									useMavenBuildSpy.setText("Use Maven Build Spy");
 									useMavenBuildSpy.setLayoutData(useMavenBuildSpyLayoutData);
 									useMavenBuildSpy.setSelection(false);
+									useMavenBuildSpy.addSelectionListener(new SelectionListener() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											IDialogSettings dialogSettings = M2EUIPluginActivator.getDefault().getDialogSettings();
+											dialogSettings.put("phasesandgoals.useMavenBuildSpy", useMavenBuildSpy.getSelection());
+										}
+
+										@Override
+										public void widgetDefaultSelected(SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
 
 									GridData flagsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 									Label flagsLabel = new Label(composite, SWT.LEFT);
@@ -612,6 +627,16 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									};
 									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
+
+
+									IDialogSettings dialogSettings = M2EUIPluginActivator.getDefault().getDialogSettings();
+									runGoalsInSelectionOrderMode.setSelection(dialogSettings.getBoolean("phasesandgoals.runGoalsInSelectionOrder"));
+									useMavenBuildSpy.setSelection(dialogSettings.getBoolean("phasesandgoals.useMavenBuildSpy"));
+
+									String cliflags = dialogSettings.get("phasesandgoals.cliflags");
+									if (cliflags != null) {
+										flags.setText(cliflags);
+									}
 
 									return composite;
 								}
@@ -700,7 +725,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 										@Override
 										public void widgetSelected(SelectionEvent e) {
-											close();
 											toConsole(project, mavenConsole, phases);
 										}
 
@@ -751,9 +775,15 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 				} catch (IOException e) {
 				}
 			}
+			IDialogSettings dialogSettings = M2EUIPluginActivator.getDefault().getDialogSettings();
+			if (cliFlags.trim().length() > 0) {
+				dialogSettings.put("phasesandgoals.cliflags", cliFlags.trim());
+			} else {
+				dialogSettings.put("phasesandgoals.cliflags", "");
+			}
 			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,
 					(eventSpyConsoleJarFilePath.trim().length() > 0 ? eventSpyConsoleJarFilePath + " " : "")
-							+ (cliFlags.trim().length() > 0 ? cliFlags + " " : "") + goalsToRun);
+							+ (cliFlags.trim().length() > 0 ? cliFlags.trim() + " " : "") + goalsToRun);
 			DebugUITools.launch(launchConfiguration, mode);
 		}
 	}

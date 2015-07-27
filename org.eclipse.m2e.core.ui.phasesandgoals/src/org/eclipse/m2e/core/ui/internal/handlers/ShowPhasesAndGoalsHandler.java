@@ -96,6 +96,8 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IFileEditorInput;
@@ -111,6 +113,7 @@ import org.slf4j.LoggerFactory;
 @SuppressWarnings("restriction")
 public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
+	private static final String DEFAULT_CLI_FLAGS = "-B";
 	private static final String EXPAND_ALL = "icons/expand_all.png";
 	private static final String COLLAPSE_ALL = "icons/collapse_all.png";
 
@@ -121,6 +124,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	private static final String PHASES_AND_GOALS = "icons/phasesandgoals.png";
 	private static final String PHASE = "icons/phase.png";
 	private static final String GOAL = "icons/goal.png";
+	private static final String SAVE = "icons/save.png";
 
 	private static Map<String, ImageDescriptor> imageDescriptorMap = new HashMap<>();
 
@@ -606,7 +610,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 									GridData flagsLayoutData = new GridData(GridData.FILL_HORIZONTAL);
 									flags = new Text(composite, SWT.SINGLE | SWT.BORDER);
-									flags.setText("-B");
+									flags.setText(DEFAULT_CLI_FLAGS);
 									flags.setLayoutData(flagsLayoutData);
 
 									GridData goalsLabelLayoutData = new GridData(GridData.FILL_HORIZONTAL);
@@ -616,9 +620,90 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 									GridData goalsLayoutData = new GridData(GridData.FILL_BOTH);
 									goalsLayoutData.heightHint = convertHeightInCharsToPixels(4);
-									;
 									goals = new Text(composite, SWT.MULTI | SWT.WRAP | SWT.BORDER);
 									goals.setLayoutData(goalsLayoutData);
+
+									final IDialogSettings dialogSettings = M2EUIPluginActivator.getDefault().getDialogSettings();
+
+									GridData manageConfigToolbarLayoutData = new GridData(GridData.FILL_HORIZONTAL);
+									ToolBar manageConfigToolbar = new ToolBar(composite, SWT.FLAT | SWT.RIGHT);
+									manageConfigToolbar.setLayoutData(manageConfigToolbarLayoutData);
+
+									ToolItem separator = new ToolItem(manageConfigToolbar, SWT.SEPARATOR);
+									Combo combo = new Combo(manageConfigToolbar, SWT.DROP_DOWN);
+
+									combo.add("");
+									IDialogSettings[] sections = dialogSettings.getSections();
+									String sectionNamePrefix = "phasesandgoals." + project.getName() + ".";
+									for (IDialogSettings section : sections) {
+										String sectionName = section.getName();
+										if (sectionName.startsWith(sectionNamePrefix)) {
+											String configName = sectionName.substring(sectionNamePrefix.length());
+											combo.add(configName);
+										}
+									}
+								    combo.pack();
+								    separator.setWidth(combo.getSize().x*3);
+								    separator.setControl(combo);
+
+								    combo.addSelectionListener(new SelectionListener() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											String configName = combo.getText().trim();
+											if (configName.length() == 0) {
+												goals.setText("");
+												flags.setText(DEFAULT_CLI_FLAGS);
+											} else {
+												IDialogSettings section = dialogSettings.getSection(sectionNamePrefix + configName);
+												if (section != null) {
+													String goalNames = section.get("goals");
+													if (goalNames != null) {
+														goals.setText(goalNames);
+													}
+													String cliFlags = section.get("flags");
+													if (cliFlags != null) {
+														flags.setText(cliFlags);
+													}
+													useMavenBuildSpy.setSelection(section.getBoolean("mavenBuildSpy"));
+												}
+											}
+										}
+
+										@Override
+										public void widgetDefaultSelected(SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
+
+									separator = new ToolItem(manageConfigToolbar, SWT.SEPARATOR);
+
+									ToolItem saveToolItem = new ToolItem(manageConfigToolbar, SWT.PUSH);
+									saveToolItem.setImage(getImageForName(shell.getDisplay(), SAVE));
+
+									saveToolItem.addSelectionListener(new SelectionListener() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											String goalNames = goals.getText().trim();
+											String cliFlags = flags.getText().trim();
+											if (goalNames != null) {
+												String configName = combo.getText().trim();
+												if (configName.length()> 0) {
+													IDialogSettings section = dialogSettings.getSection(sectionNamePrefix + configName);
+													if (section == null) {
+														section = dialogSettings.addNewSection(sectionNamePrefix + configName);
+													}
+													section.put("mavenBuildSpy", useMavenBuildSpy.getSelection());
+													section.put("goals", goalNames);
+													section.put("flags", cliFlags);
+												}
+											}
+										}
+
+										@Override
+										public void widgetDefaultSelected(SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
 
 									ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
 
@@ -628,8 +713,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 									};
 									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
 
-
-									IDialogSettings dialogSettings = M2EUIPluginActivator.getDefault().getDialogSettings();
 									runGoalsInSelectionOrderMode.setSelection(dialogSettings.getBoolean("phasesandgoals.runGoalsInSelectionOrder"));
 									useMavenBuildSpy.setSelection(dialogSettings.getBoolean("phasesandgoals.useMavenBuildSpy"));
 

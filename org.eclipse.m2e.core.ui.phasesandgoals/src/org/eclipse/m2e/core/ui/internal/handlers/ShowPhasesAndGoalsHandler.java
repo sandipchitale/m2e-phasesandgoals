@@ -44,6 +44,7 @@ import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.JavaRuntime;
+import org.eclipse.jface.dialogs.DialogSettings;
 import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.IDialogSettings;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -124,6 +125,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	private static final String PHASES_AND_GOALS = "icons/phasesandgoals.png";
 	private static final String PHASE = "icons/phase.png";
 	private static final String GOAL = "icons/goal.png";
+	private static final String DELETE = "icons/delete.png";
 	private static final String SAVE = "icons/save.png";
 
 	private static Map<String, ImageDescriptor> imageDescriptorMap = new HashMap<>();
@@ -704,7 +706,30 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											widgetSelected(e);
 										}
 									});
+									
+									ToolItem deleteToolItem = new ToolItem(manageConfigToolbar, SWT.PUSH);
+									deleteToolItem.setImage(getImageForName(shell.getDisplay(), DELETE));
 
+									deleteToolItem.addSelectionListener(new SelectionListener() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											String configName = combo.getText().trim();
+											if (configName.length() != 0) {
+												IDialogSettings section = dialogSettings.getSection(sectionNamePrefix + configName);
+												if (section != null) {
+													((DialogSettings) dialogSettings).removeSection(section);
+													combo.remove(configName);
+													combo.setText("");
+												}
+											}
+										}
+
+										@Override
+										public void widgetDefaultSelected(SelectionEvent e) {
+											widgetSelected(e);
+										}
+									});
+									
 									ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
 
 										@Override

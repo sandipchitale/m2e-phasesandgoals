@@ -16,6 +16,7 @@ Select a Maven project in the IDE and then invoke `Project > Phases and Goals` c
 - The dialog is now modeless. This allows multiple invocation on different projects.
 - If there are multiple Maven projects in the workspace, a selector for other project's is shown, thus allowing invoking the Phase and Goals dialog on the selected project.
 - If there is only one maven project in the workspace it is always selected.
+- You can save and delete configurations.
 - Added a simple Maven Build Spy. It shows the success or failure of the goals, the timing and the exception message as a tooltip for failed goals.
 
 ![Screenshot](org.eclipse.m2e.core.ui.phasesandgoals/mavenbuildspy.png)

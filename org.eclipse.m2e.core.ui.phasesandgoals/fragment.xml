@@ -16,6 +16,10 @@
             name="Phases And Goals...">
          <defaultHandler
                class="org.eclipse.m2e.core.ui.internal.handlers.ShowPhasesAndGoalsHandler">
+            <parameter
+                  name="org.eclipse.m2e.core.ui.phasesandgoals.parameter"
+                  value="-">
+            </parameter>
          </defaultHandler>
       </command>
    </extension>

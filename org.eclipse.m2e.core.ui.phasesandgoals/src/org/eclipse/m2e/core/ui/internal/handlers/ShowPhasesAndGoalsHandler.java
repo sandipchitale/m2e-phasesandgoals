@@ -38,6 +38,7 @@ import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
 import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.debug.ui.IDebugUIConstants;
+import org.eclipse.debug.ui.ILaunchGroup;
 import org.eclipse.debug.ui.RefreshTab;
 import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
@@ -79,6 +80,7 @@ import org.eclipse.m2e.core.ui.internal.M2EUIPluginActivator;
 import org.eclipse.m2e.core.ui.internal.components.MavenProjectLabelProvider;
 import org.eclipse.m2e.core.ui.internal.console.MavenConsoleImpl;
 import org.eclipse.m2e.internal.launch.Messages;
+import org.eclipse.m2e.ui.internal.launch.MavenLaunchMainTab;
 import org.eclipse.osgi.util.NLS;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.Clipboard;
@@ -127,6 +129,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	private static final String GOAL = "icons/goal.png";
 	private static final String DELETE = "icons/delete.png";
 	private static final String SAVE = "icons/save.png";
+	private static final String M2 = "icons/m2.gif";
 
 	private static Map<String, ImageDescriptor> imageDescriptorMap = new HashMap<>();
 
@@ -645,7 +648,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 										}
 									}
 								    combo.pack();
-								    separator.setWidth(combo.getSize().x*3);
+								    separator.setWidth(combo.getSize().x*2);
 								    separator.setControl(combo);
 
 								    combo.addSelectionListener(new SelectionListener() {
@@ -706,7 +709,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											widgetSelected(e);
 										}
 									});
-									
+
 									ToolItem deleteToolItem = new ToolItem(manageConfigToolbar, SWT.PUSH);
 									deleteToolItem.setImage(getImageForName(shell.getDisplay(), DELETE));
 
@@ -729,14 +732,46 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 											widgetSelected(e);
 										}
 									});
-									
-									ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
+
+									separator = new ToolItem(manageConfigToolbar, SWT.SEPARATOR);
+
+									ToolItem saveM2LaunchConfigToolItem = new ToolItem(manageConfigToolbar, SWT.PUSH);
+									saveM2LaunchConfigToolItem.setImage(getImageForName(shell.getDisplay(), M2));
+									saveM2LaunchConfigToolItem.setToolTipText("Save a m2e launch cofiguration");
+
+									saveM2LaunchConfigToolItem.addSelectionListener(new SelectionListener() {
+										@Override
+										public void widgetSelected(SelectionEvent e) {
+											String configName = combo.getText().trim();
+											if (configName.length() != 0) {
+												String cliFlags = flags.getText();
+												String goalsToRun = goals.getText();
+												boolean useMBS = useMavenBuildSpy.getSelection();
+												ILaunchConfiguration launchConfiguration =
+														createLaunchConfiguration(project, mavenConsole, phases, cliFlags, goalsToRun, useMBS, "run", configName);
+												
+												if (launchConfiguration != null) {
+													ILaunchGroup group = DebugUITools.getLaunchGroup(launchConfiguration, "run");
+													String groupId = group != null ? group.getIdentifier() : MavenLaunchMainTab.ID_EXTERNAL_TOOLS_LAUNCH_GROUP;
+													DebugUITools.openLaunchConfigurationDialog(shell, launchConfiguration, groupId, null);
+												}
+											}
+										}
 
 										@Override
-										public void selectionChanged(SelectionChangedEvent event) {
+										public void widgetDefaultSelected(SelectionEvent e) {
+											widgetSelected(e);
 										}
-									};
-									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
+									});
+
+
+//									ISelectionChangedListener selectionChangedListener = new ISelectionChangedListener() {
+//
+//										@Override
+//										public void selectionChanged(SelectionChangedEvent event) {
+//										}
+//									};
+//									getTreeViewer().addPostSelectionChangedListener(selectionChangedListener);
 
 									runGoalsInSelectionOrderMode.setSelection(dialogSettings.getBoolean("phasesandgoals.runGoalsInSelectionOrder"));
 									useMavenBuildSpy.setSelection(dialogSettings.getBoolean("phasesandgoals.useMavenBuildSpy"));
@@ -771,7 +806,6 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 										@Override
 										public void widgetSelected(SelectionEvent e) {
-
 											String cliFlags = flags.getText();
 											String goalsToRun = goals.getText();
 											boolean useMBS = useMavenBuildSpy.getSelection();
@@ -871,7 +905,22 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 	}
 
 	private void launch(IProject project, MavenConsoleImpl mavenConsole, Map<String, List<MojoExecutionKey>> phases,
-			String cliFlags, String goalsToRun, boolean useMavenBuildSpy, final String mode) {
+		String cliFlags, String goalsToRun, boolean useMavenBuildSpy, final String mode) {
+
+		ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project, mavenConsole, phases,
+				 cliFlags,  goalsToRun,  useMavenBuildSpy, mode);
+		if (launchConfiguration != null) {
+			DebugUITools.launch(launchConfiguration, mode);
+		}
+	}
+
+	private ILaunchConfiguration createLaunchConfiguration(IProject project, MavenConsoleImpl mavenConsole, Map<String, List<MojoExecutionKey>> phases,
+			String cliFlags, String goalsToRun, boolean useMavenBuildSpy, String mode) {
+		return createLaunchConfiguration(project, mavenConsole, phases, cliFlags,  goalsToRun,  useMavenBuildSpy, mode, null);
+	}
+
+	private ILaunchConfiguration createLaunchConfiguration(IProject project, MavenConsoleImpl mavenConsole, Map<String, List<MojoExecutionKey>> phases,
+			String cliFlags, String goalsToRun, boolean useMavenBuildSpy, final String mode, String name) {
 		if (goalsToRun.length() > 0) {
 			String eventSpyConsoleJarFilePath = "";
 			if (useMavenBuildSpy) {
@@ -891,10 +940,12 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			}
 			ILaunchConfiguration launchConfiguration = createLaunchConfiguration(project,
 					(eventSpyConsoleJarFilePath.trim().length() > 0 ? eventSpyConsoleJarFilePath + " " : "")
-							+ (cliFlags.trim().length() > 0 ? cliFlags.trim() + " " : "") + goalsToRun);
-			DebugUITools.launch(launchConfiguration, mode);
+							+ (cliFlags.trim().length() > 0 ? cliFlags.trim() + " " : "") + goalsToRun, name);
+			return launchConfiguration;
 		}
+		return null;
 	}
+
 
 	private String goalsToRun(IProject project, MavenConsoleImpl mavenConsole,
 			Map<String, List<MojoExecutionKey>> phases, Object[] results) {
@@ -981,7 +1032,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 		return artifactId;
 	}
 
-	private ILaunchConfiguration createLaunchConfiguration(IContainer basedir, String goals) {
+	private ILaunchConfiguration createLaunchConfiguration(IContainer basedir, String goals, String name) {
 		try {
 			ILaunchManager launchManager = DebugPlugin.getDefault().getLaunchManager();
 			ILaunchConfigurationType launchConfigurationType = launchManager
@@ -989,12 +1040,17 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 
 			String launchSafeGoalName = goals.replace(':', '-');
 
-			ILaunchConfigurationWorkingCopy workingCopy = launchConfigurationType.newInstance(null, //
-					NLS.bind(Messages.ExecutePomAction_executing, launchSafeGoalName,
-							basedir.getLocation().toString().replace('/', '-')));
+			ILaunchConfigurationWorkingCopy workingCopy;
+			if (name == null) {
+				workingCopy = launchConfigurationType.newInstance(null, 
+						NLS.bind(Messages.ExecutePomAction_executing, launchSafeGoalName,
+								basedir.getLocation().toString().replace('/', '-')));
+				workingCopy.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
+			} else {
+				workingCopy = launchConfigurationType.newInstance(null, basedir.getName() + " " + name);
+			}
 			workingCopy.setAttribute(MavenLaunchConstants.ATTR_POM_DIR, basedir.getLocation().toOSString());
 			workingCopy.setAttribute(MavenLaunchConstants.ATTR_GOALS, goals);
-			workingCopy.setAttribute(IDebugUIConstants.ATTR_PRIVATE, true);
 			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_SCOPE, "${project}"); //$NON-NLS-1$
 			workingCopy.setAttribute(RefreshTab.ATTR_REFRESH_RECURSIVE, true);
 
@@ -1012,7 +1068,7 @@ public class ShowPhasesAndGoalsHandler extends AbstractHandler {
 			// -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000
 			// -Xnoagent -Djava.compiler=NONE"
 
-			return workingCopy;
+			return (name == null ? workingCopy : workingCopy.doSave());
 		} catch (CoreException ex) {
 		}
 		return null;

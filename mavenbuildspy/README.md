@@ -10,3 +10,5 @@ You can use the spy in your Maven builds by:
 - And then passing the following parameter to your mvn build like so:
 
 `> mvn -Dmaven.ext.class.path=path-to/mavenbuildspy.jar ....`
+
+- Alternatively you can simply copy the `mavenbuildspy.jar` to `lib/ext` folder of your maven installation.
